@@ -14,7 +14,9 @@ root = Path(__file__).parent
 requirements = [
     'pydantic',
     'orjson',
-    'pyyaml'
+    'pyyaml',
+    'pysimdjson',
+    'dill'
 ]
 
 args = {

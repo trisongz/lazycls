@@ -1,11 +1,8 @@
 import os
-from pathlib import Path
-from typing import Union
 from .serializers import OrJson, Yaml
 from .funcs import doesTextMatch
+from .utils import Path, toPath
 from .types import *
-
-
 
 
 def hasEnv(name: str) -> bool: return os.getenv(name, None) is not None
@@ -56,13 +53,6 @@ def envToStr(name: str, default: str = ''):
 def toEnv(name: str, value: Any, override: bool = False):
     if not hasEnv(name) or override: os.environ[name] = str(value)
 
-
-def toPath(path: Union[str, Path], resolve: bool = True) -> Path:
-    if isinstance(path, str): path = Path(path)
-    if resolve: path.resolve()
-    return path
-
-
 _LoadedEnvFiles = set()
 
 def loadEnvFile(path: Union[str, Path], override: bool = False):
@@ -80,6 +70,9 @@ def loadEnvFile(path: Union[str, Path], override: bool = False):
     _LoadedEnvFiles.add(path.name)
     return True
 
+load_env_file = loadEnvFile
+to_env = toEnv
+
 
 __all__ = [
     'hasEnv',
@@ -93,6 +86,7 @@ __all__ = [
     'envInVals',
     'envToStr'
     'toEnv',
-    'toPath',
-    'loadEnvFile'
+    'loadEnvFile',
+    'load_env_file',
+    'to_env'
 ]

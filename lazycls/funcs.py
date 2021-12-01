@@ -1,11 +1,8 @@
 import re
 from datetime import datetime, timedelta
 from functools import lru_cache, wraps
-from pathlib import Path
 from .types import *
 from .models import ValidatorArgs
-
-def getParentPath(p: str) -> Path: return Path(p).parent
 
 def toList(text: Union[str, List[str]]):
     if isinstance(text, list): return text
@@ -126,7 +123,7 @@ def getDictMatch(key: str, val: str, items: DictMany, default: DictAny = None, e
     return default
 
 
-def timedCache(seconds: int, maxsize: int = 128):
+def timed_cache(seconds: int, maxsize: int = 128):
     def wrapper_cache(func):
         func = lru_cache(maxsize=maxsize)(func)
         func.lifetime = timedelta(seconds=seconds)
@@ -141,7 +138,7 @@ def timedCache(seconds: int, maxsize: int = 128):
     return wrapper_cache
 
 
-def parseMetrics(data: Union[int, str]):
+def parse_metrics(data: Union[int, str]):
     if isinstance(data, int): return data
     if data.endswith('Ki'):
         return int(data.split('Ki')[0].strip()) * 1024
@@ -155,11 +152,11 @@ def parseMetrics(data: Union[int, str]):
         return int(data.split('m')[0].strip()) * 1000
     return int(data.strip())
 
-def listToDict(data: List[Dict[str, str]], k: str, v: str):
+def list_to_dict(data: List[Dict[str, str]], k: str, v: str):
     return {i[k]: i[v] for i in data}
 
 
-def caseCamelToSnake(name):
+def camelcase_to_snakecase(name):
     """
     Convert a name in camel case to snake case.
     Arguments:
@@ -170,6 +167,11 @@ def caseCamelToSnake(name):
     name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
+
+listToDict = list_to_dict
+caseCamelToSnake = camelcase_to_snakecase
+timedCache = timed_cache
+parseMetrics = parse_metrics
 
 __all__ = [
     'toList',
@@ -183,6 +185,9 @@ __all__ = [
     'getDictMatch',
     'doesTextValidate',
     'setToMany',
-    'getParentPath',
-    'caseCamelToSnake'
+    'caseCamelToSnake',
+    'list_to_dict',
+    'camelcase_to_snakecase',
+    'timed_cache',
+    'parse_metrics'
 ]
