@@ -11,21 +11,18 @@ pkg_name = 'lazycls'
 gitrepo = 'trisongz/lazycls'
 root = Path(__file__).parent
 
+requirements = [
+    'pydantic',
+    'orjson',
+    'pyyaml'
+]
+
 args = {
     'packages': find_packages(include = ['lazycls', 'lazycls.*']),
-    'requirements': [],
+    'install_requires': requirements,
+    'long_description': root.joinpath('README.md').read_text(encoding='utf-8'),
     'entry_points': {}
 }
-
-with root.joinpath('requirements.txt').open('r') as r:
-    reqs = [line.split('=', 1)[0] for line in r]
-    args['requirements'].extend(reqs)
-
-
-with root.joinpath('README.md').open('r') as f:
-    long_description = f.read()
-
-args['install_requires'] = list(set(args.pop('requirements')))
 
 setup(
     name=pkg_name,
@@ -35,7 +32,6 @@ setup(
     description='Dynamic Dataclasses for the Super Lazy',
     author='Tri Songz',
     author_email='ts@growthengineai.com',
-    long_description=long_description,
     long_description_content_type="text/markdown",
     classifiers=[
         'Intended Audience :: Developers',
