@@ -84,7 +84,7 @@ __all__ = [
     'envToFloat',
     'envToInt',
     'envInVals',
-    'envToStr'
+    'envToStr',
     'toEnv',
     'loadEnvFile',
     'load_env_file',

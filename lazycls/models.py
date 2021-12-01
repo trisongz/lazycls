@@ -32,9 +32,16 @@ class ValidatorArgs(BaseCls):
     include: List[str] = []
     exclude: List[str] = []
 
+
+class BaseDataCls(BaseCls):
+    string: str = None
+    value: Any = None
+    dtype: str = None
+
 __all__ = [
     'BaseModel',
     'Field',
-    'BaseCls'
+    'BaseCls',
+    'BaseDataCls',
     'BaseLazy'
 ]

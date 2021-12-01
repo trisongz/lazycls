@@ -6,7 +6,7 @@ from . import models
 from . import base
 from . import funcs
 from . import envs
-
+from . import timez
 
 
 from .prop import classproperty, ClasspropertyMeta
@@ -17,6 +17,7 @@ from .models import (
     BaseLazy,
     Field
 )
+from .timez import TimeCls
 
 from .base import (
     LazyCls,
