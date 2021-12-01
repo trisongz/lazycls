@@ -25,6 +25,8 @@ with root.joinpath('requirements.txt').open('r') as r:
 with root.joinpath('README.md').open('r') as f:
     long_description = f.read()
 
+args['install_requires'] = list(set(args.pop('requirements')))
+
 setup(
     name=pkg_name,
     version=version,
