@@ -10,3 +10,8 @@ DictList = List[Dict[str, Any]]
 DictMany = TypeVar('DictMany', Dict[str, Any], List[Dict[str, Any]])
 DictAny = Dict[str, Any]
 DictText = Dict[str, str]
+
+DefaultHeaders = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+}

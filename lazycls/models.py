@@ -22,6 +22,16 @@ class BaseLazy(BaseModel):
     def get(self, name, default: Any = None):
         return getattr(self, name, default)
 
+class Validator(BaseCls):
+    text: str
+    include: List[str] = []
+    exclude: List[str] = []
+    exact: bool = False
+
+class ValidatorArgs(BaseCls):
+    include: List[str] = []
+    exclude: List[str] = []
+
 __all__ = [
     'BaseModel',
     'Field',
