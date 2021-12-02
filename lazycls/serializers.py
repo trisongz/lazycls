@@ -90,7 +90,7 @@ class Pkl:
 
     @classmethod
     def loads(cls, obj, *args, **kwargs):
-        return dill.loads(str=obj, protocol=dill.HIGHEST_PROTOCOL, *args, **kwargs)
+        return dill.loads(str=obj, *args, **kwargs)
 
 class Base:
     encoding: str = "UTF-8"
