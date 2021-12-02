@@ -70,8 +70,13 @@ def loadEnvFile(path: Union[str, Path], override: bool = False):
     _LoadedEnvFiles.add(path.name)
     return True
 
+def setEnvDict(data: Dict[str, Any], override: bool = False):
+    for k,v in data.items():
+        toEnv(name=k, value=v, override=override)
+
 load_env_file = loadEnvFile
 to_env = toEnv
+set_env_from_dict = setEnvDict
 
 
 __all__ = [
@@ -86,6 +91,8 @@ __all__ = [
     'envInVals',
     'envToStr',
     'toEnv',
+    'setEnvDict',
+    'set_env_from_dict',
     'loadEnvFile',
     'load_env_file',
     'to_env'
