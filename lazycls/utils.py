@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess
 import logging
+import platform
 from pathlib import Path
 from typing import Union, List
 
@@ -9,13 +10,18 @@ from typing import Union, List
 logger = logging.getLogger(name='lazycls')
 
 
-def exec_cmd(cmd):
-    out = subprocess.check_output(cmd, shell=True)
-    if isinstance(out, bytes): out = out.decode('utf8')
-    return out.strip()
+def exec_cmd(cmd, raise_error: bool = True):
+    try:
+        out = subprocess.check_output(cmd, shell=True)
+        if isinstance(out, bytes): out = out.decode('utf8')
+        return out.strip()
+    except Exception as e:
+        if not raise_error: return ""
+        raise e
 
 def exec_daemon(cmd: Union[List[str], str], stdout = subprocess.PIPE, stderr = subprocess.STDOUT, *args, **kwargs):
     if isinstance(cmd, str): cmd = [cmd]
+    if platform.system() == 'Darwin': return subprocess.Popen(cmd, stdout = stdout, stderr = stderr, *args, **kwargs)
     return subprocess.Popen(cmd, stdout = stdout, stderr = stderr, preexec_fn = lambda: os.setuid(1), *args, **kwargs)
 
 def exec_shell(cmd): return os.system(cmd)
