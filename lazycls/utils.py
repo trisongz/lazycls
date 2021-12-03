@@ -19,10 +19,10 @@ def exec_cmd(cmd, raise_error: bool = True):
         if not raise_error: return ""
         raise e
 
-def exec_daemon(cmd: Union[List[str], str], stdout = subprocess.PIPE, stderr = subprocess.STDOUT, *args, **kwargs):
+def exec_daemon(cmd: Union[List[str], str], stdout = subprocess.PIPE, stderr = subprocess.STDOUT, set_prociud: bool = True, *args, **kwargs):
     if isinstance(cmd, str): cmd = [cmd]
-    if platform.system() == 'Darwin': return subprocess.Popen(cmd, stdout = stdout, stderr = stderr, *args, **kwargs)
-    return subprocess.Popen(cmd, stdout = stdout, stderr = stderr, preexec_fn = lambda: os.setuid(1), *args, **kwargs)
+    if set_prociud and platform.system() != 'Darwin': return subprocess.Popen(cmd, stdout = stdout, stderr = stderr, preexec_fn = lambda: os.setuid(1), *args, **kwargs)
+    return subprocess.Popen(cmd, stdout = stdout, stderr = stderr, *args, **kwargs)
 
 def exec_shell(cmd): return os.system(cmd)
 def getParentPath(p: str) -> Path: return Path(p).parent
@@ -73,6 +73,22 @@ def find_binary_in_path(filename):
             return binary
     return None
 
+def exec_sed(path: Union[str, Path], changes: List[set], new_path: Union[str, Path] = None, chmod: int = None) -> Path:
+    """ Does a cleaner `sed` command 
+        - path: path to file
+        - changes: List of {find, replace, n_times}
+        - new_path: new filepath, otherwise will write to original
+        - chmod: int 
+    """
+    f = toPath(path)
+    txt = f.read_text(encoding='utf-8')
+    for c in changes:
+        txt = txt.replace(str(c[0]), str(c[1]), c[2]) if len(c) == 3 else txt.replace(str(c[0]), str(c[1]))
+    if new_path: f = toPath(new_path)
+    f.write_text(txt, encoding='utf-8')
+    if chmod: f.chmod(chmod)
+    return f
+
 # Aliases that wont be exported by default
 run = exec_cmd
 cmd = exec_cmd
@@ -86,6 +102,7 @@ __all__ = [
     'exec_cmd',
     'exec_daemon',
     'exec_command',
+    'exec_sed',
     'get_parent_path',
     'getParentPath',
     'to_path',
