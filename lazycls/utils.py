@@ -19,9 +19,9 @@ def exec_cmd(cmd, raise_error: bool = True):
         if not raise_error: return ""
         raise e
 
-def exec_daemon(cmd: Union[List[str], str], stdout = subprocess.PIPE, stderr = subprocess.STDOUT, set_prociud: bool = True, *args, **kwargs):
+def exec_daemon(cmd: Union[List[str], str], stdout = subprocess.PIPE, stderr = subprocess.STDOUT, set_proc_uid: bool = True, *args, **kwargs):
     if isinstance(cmd, str): cmd = [cmd]
-    if set_prociud and platform.system() != 'Darwin': return subprocess.Popen(cmd, stdout = stdout, stderr = stderr, preexec_fn = lambda: os.setuid(1), *args, **kwargs)
+    if set_proc_uid and platform.system() != 'Darwin': return subprocess.Popen(cmd, stdout = stdout, stderr = stderr, preexec_fn = lambda: os.setuid(1), *args, **kwargs)
     return subprocess.Popen(cmd, stdout = stdout, stderr = stderr, *args, **kwargs)
 
 def exec_shell(cmd): return os.system(cmd)
