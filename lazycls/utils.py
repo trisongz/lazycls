@@ -4,7 +4,7 @@ import subprocess
 import logging
 import platform
 from pathlib import Path
-from typing import Union, List
+from typing import Union, List, Type
 
 
 logger = logging.getLogger(name='lazycls')
@@ -24,16 +24,37 @@ def exec_daemon(cmd: Union[List[str], str], stdout = subprocess.PIPE, stderr = s
     if set_proc_uid and platform.system() != 'Darwin': return subprocess.Popen(cmd, stdout = stdout, stderr = stderr, preexec_fn = lambda: os.setuid(1), *args, **kwargs)
     return subprocess.Popen(cmd, stdout = stdout, stderr = stderr, *args, **kwargs)
 
+def exec_run(cmd: Union[List[str], str], *args, **kwargs):
+    if isinstance(cmd, str): cmd = [cmd]
+    return subprocess.run(cmd, *args, **kwargs)
+
+def exec_out(cmd: Union[List[str], str], shell: bool = True, *args, **kwargs):
+    if isinstance(cmd, str): cmd = [cmd]
+    return subprocess.check_output(cmd, shell = shell, *args, **kwargs)
+
+
 def exec_shell(cmd): return os.system(cmd)
 def getParentPath(p: str) -> Path: return Path(p).parent
 def to_camelcase(string: str) -> str: return ''.join(word.capitalize() for word in string.split('_'))
 
-def toPath(path: Union[str, Path], resolve: bool = True) -> Path:
+def toPath(path: Union[str, Path], resolve: bool = True) -> Type[Path]:
     if isinstance(path, str): path = Path(path)
     if resolve: path.resolve()
     return path
 
+def get_user_path(path: Union[str, Path], resolve: bool = False) -> Type[Path]:
+    if isinstance(path, str): path = Path(path)
+    path = path.expanduser()
+    if resolve: path.resolve()
+    return path
 
+
+def get_cwd(*paths, posix: bool = True) -> Union[str, Path]:
+    if not paths:
+        if posix: return Path.cwd().as_posix()
+        return Path.cwd()
+    if posix: return Path.cwd().joinpath(*paths).as_posix()
+    return Path.cwd().joinpath(*paths)
 
 def list_to_chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
@@ -90,7 +111,7 @@ def exec_sed(path: Union[str, Path], changes: List[set], new_path: Union[str, Pa
     return f
 
 # Aliases that wont be exported by default
-run = exec_cmd
+run = exec_run
 cmd = exec_cmd
 exec_command = exec_cmd
 
@@ -99,6 +120,8 @@ to_path = toPath
 
 
 __all__ = [
+    'exec_run',
+    'exec_out',
     'exec_cmd',
     'exec_daemon',
     'exec_command',
@@ -106,6 +129,9 @@ __all__ = [
     'get_parent_path',
     'getParentPath',
     'to_path',
+    'to_user_path',
+    'get_cwd',
     'toPath',
     'to_camelcase',
 ]
+

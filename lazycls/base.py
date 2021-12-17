@@ -36,6 +36,7 @@ def create_lazycls(clsname: str, data: Dict[str, Any], modulename: str = _BaseMo
     Iterator Function to take data and recurisvely turn them into LazyCls Models
     """
     if clsname.endswith('s'): clsname = clsname[:-1]
+    if isinstance(data, str): return data
     for k,v in data.items():
         subcls = f'{clsname}_{k}'
         if v and isinstance(v, list):

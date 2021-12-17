@@ -138,6 +138,16 @@ def timed_cache(seconds: int, maxsize: int = 128):
     return wrapper_cache
 
 
+def cached_classmethod(seconds: int, maxsize: int = 128):
+    def wrapper_cache(func):
+        @classmethod
+        @timed_cache(seconds = seconds, maxsize = maxsize)
+        def wrapped_func(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapped_func
+    return wrapper_cache
+
+
 def parse_metrics(data: Union[int, str]):
     if isinstance(data, int): return data
     if data.endswith('Ki'):
