@@ -8,11 +8,14 @@ import hashlib
 import simdjson as _json
 import orjson as _orjson
 from typing import Any, Union
+
 from .utils import Path, toPath, logger
 from uuid import uuid4
 
 
 class OrJson:
+    binary: False
+
     @classmethod
     def dumps(cls, obj, *args, default: Any = None, **kwargs):
         return _orjson.dumps(obj, default=default, *args, **kwargs).decode()
@@ -20,12 +23,14 @@ class OrJson:
     @classmethod
     def loads(cls, obj, *args, **kwargs):
         return _orjson.loads(obj, *args, **kwargs)
+    
 
 
 class Json:
     p = _json.Parser()
     Object = _json.Object
     Array = _json.Array
+    binary: False
 
     @classmethod
     def dumps(cls, obj, *args, **kwargs):
@@ -74,6 +79,8 @@ class JsonCls:
                     raise
 
 class Yaml:
+    binary: False
+
     @classmethod
     def dumps(cls, obj, *args, **kwargs):
         return yaml.dump(obj, *args, **kwargs)
@@ -84,6 +91,8 @@ class Yaml:
 
 
 class Pkl:
+    binary: True
+
     @classmethod
     def dumps(cls, obj, *args, **kwargs):
         return dill.dumps(obj=obj, protocol=dill.HIGHEST_PROTOCOL, *args, **kwargs)

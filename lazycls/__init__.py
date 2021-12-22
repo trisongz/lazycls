@@ -7,7 +7,7 @@ from . import base
 from . import funcs
 from . import envs
 from . import timez
-
+from . import io
 
 from .prop import classproperty, ClasspropertyMeta
 from .utils import toPath, to_path
@@ -35,7 +35,10 @@ from .envs import (
     load_env_file,
     toEnv,
     to_env,
+    Env
 )
+
+from .io import Path
 
 __all__ = [
     'classproperty',
@@ -45,5 +48,8 @@ __all__ = [
     'BaseLazy',
     'Field',
     'LazyCls',
-    'create_lazycls'
+    'create_lazycls',
+    'Env',
+    'Path',
+
 ]
