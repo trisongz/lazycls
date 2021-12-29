@@ -127,6 +127,15 @@ class Env:
         return val
     
     @classmethod
+    def to_str_env(cls, src_key: str, to_key: str, default: Any = '', override: bool = False):
+        """ used to handle credentials like AWS Keys, etc without directly exposing known env keys
+            i.e. map src_key = AWS_KEYID -> to_key = AWS_ACCESS_KEY_ID
+        """
+        val = cls.to_str(src_key, default)
+        if val: cls.set_env(key=to_key, value=val, override=override)
+        return val
+    
+    @classmethod
     def to_list(cls, key: str, default: List[str] = []) -> List[str]:
         val = os.getenv(key, None)
         if val: return val.split(cls.list_delimiter)
@@ -153,6 +162,69 @@ class Env:
         val = os.getenv(key, None)
         if val is None: return default
         return cls.cast(val, int)
+    
+    @classmethod
+    def to_b64(cls, key: str, default: Any = ''):
+        """ Base64 encoded """
+        val = os.getenv(key, None)
+        if val is None: return default
+        from lazycls.serializers import Base
+        return Base.b64_decode(val)
+
+    @classmethod
+    def to_b64_env(cls, src_key: str, to_key: str, default: Any = '', override: bool = False):
+        """ used to handle credentials like AWS Keys, etc without directly exposing known env keys
+            i.e. map src_key = AWS_KEYID -> to_key = AWS_ACCESS_KEY_ID
+        """
+        val = cls.to_b64(src_key, default)
+        if val: cls.set_env(key=to_key, value=val, override=override)
+        return val
+
+    @classmethod
+    def to_bgz(cls, key: str, default: Any = ''):
+        """ Base64 + Gzip encoded """
+        val = os.getenv(key, None)
+        if val is None: return default
+        from lazycls.serializers import Base
+        return Base.b64_gzip_decode(val)
+    
+    @classmethod
+    def to_bgz_env(cls, src_key: str, to_key: str, default: Any = '', override: bool = False):
+        """ used to handle credentials like AWS Keys, etc without directly exposing known env keys
+            i.e. map src_key = AWS_KEYID -> to_key = AWS_ACCESS_KEY_ID
+        """
+        val = cls.to_bgz(src_key, default)
+        if val: cls.set_env(key=to_key, value=val, override=override)
+        return val
+    
+    
+    @classmethod
+    def to_json(cls, src_key: str, to_key: str, to_path: Union[str, Path], default: str = '{}', override: bool = False, as_posix: bool = False):
+        """ for things like GOOGLE_APPLICATION_CREDENTIALS that is json based
+            we read the env src_key, attempt to load it and then dump it in to_path
+            i.e. map src_key = ADC_DATA -> creates file at to_path -> sets env[to_key] = to_path (to_key = GOOGLE_APPLICATION_CREDENTIALS)
+        """
+        path = toPath(to_path, resolve=True)
+        if not path.exists() or override: 
+            data = os.getenv(src_key, default)
+            from lazycls.serializers import OrJson
+            path.write_text(OrJson.dumps(OrJson.loads(data)), encoding='utf-8')            
+        cls.set_env(key=to_key, value=path.as_posix(), override=override)
+        if as_posix: return path.as_posix()
+        return path
+    
+    @classmethod
+    def to_yaml(cls, src_key: str, to_key: str, to_path: Union[str, Path], default: str = '{}', override: bool = False, as_posix: bool = False):
+        """ similar to to_json, just with yaml"""
+        path = toPath(to_path, resolve=True)
+        if not path.exists() or override: 
+            data = os.getenv(src_key, default)
+            from lazycls.serializers import Yaml
+            path.write_text(Yaml.dumps(Yaml.loads(data)), encoding='utf-8')            
+        cls.set_env(key=to_key, value=path.as_posix(), override=override)
+        if as_posix: return path.as_posix()
+        return path
+
     
     @classmethod
     def in_vals(cls, key: str, values: List[str] = [], exact: bool = False, **kwargs) -> bool:
@@ -185,9 +257,43 @@ class Env:
         _LoadedEnvFiles.add(path.name)
         return True
 
+    @classmethod
+    def encode_to_string(cls, value: Any):
+        """ Transforms the value input into one that can be reloaded from env"""
+        if not value: return 'none'
+        if isinstance(value, str): return value
+        if isinstance(value, type(Path)): return value.read_text(encoding='utf8')
+        if isinstance(value, list): return cls.list_delimiter.join(value)
+        if isinstance(value, int) or isinstance(value, float): return str(value)
+        if isinstance(value, bool): return str(value).lower()
+        if isinstance(value, dict):
+            kvs = [f"{k}{cls.dict_delimiter}{v}" for k,v in value.items()]
+            return cls.list_delimiter.join(kvs)
+        return str(value)
 
-
-
+    @classmethod
+    def save_config(cls, configmap: Dict[str, Any], path: Union[str, Path]):
+        path = toPath(path, resolve=True)
+        cfg = {k: cls.encode_to_string(v) for k,v in configmap.items()}
+        # now we encode it further
+        from lazycls.serializers import Base, Yaml
+        cfg = {k: Base.b64_gzip_encode(v) for k,v in cfg.items()}
+        path.write_text(Yaml.dumps(cfg))
+        return path
+    
+    @classmethod
+    def load_config(cls, path: Union[str, Path], set_as_env: bool = True, override: bool = False):
+        # Should only expect our serialized format.
+        path = toPath(path, resolve=True)
+        assert path.exists(), f'Invalid Path: {path.as_posix()} does not exist.'
+        from lazycls.serializers import Base, Yaml
+        cfg = Yaml.loads(path.read_text())
+        cfg = {k: Base.b64_gzip_decode(v) for k,v in cfg.items()}
+        if set_as_env: 
+            for k,v in cfg.items():
+                cls.set_env(name=k, value=v, override=override)
+        return cfg
+        
 
 
 __all__ = [
