@@ -10,7 +10,7 @@ import os
 import aiofiles
 import tempfile
 from pathlib import Path as _Path
-from typing import Union, Type, List, Any, Optional, Callable
+from typing import TypeVar, Union, Type, List, Any, Optional, Callable
 from lazycls.prop import classproperty
 from lazycls.serializers import Json, OrJson, Yaml, Pkl, Base
 
@@ -100,7 +100,7 @@ class Path(_Path):
         return cls.get_path(val, **kwargs)
     
     @property
-    def exist(self): 
+    def _exists(self): 
         return self.exists()
 
     @classmethod
@@ -339,7 +339,7 @@ class Path(_Path):
     """ Modifying the below to be properties rather than callables"""
 
     @property
-    def is_dir(self):
+    def _is_dir(self):
         """
         Whether this path is a directory.
         """
@@ -350,7 +350,7 @@ class Path(_Path):
         except ValueError: return False
 
     @property
-    def is_file(self):
+    def _is_file(self):
         """
         Whether this path is a regular file (also True for symlinks pointing
         to regular files).
@@ -362,7 +362,7 @@ class Path(_Path):
         except ValueError: return False
 
     @property
-    def is_mount(self):
+    def _is_mount(self):
         """
         Check if this path is a POSIX mount point
         """
@@ -377,7 +377,7 @@ class Path(_Path):
         return ino == parent_ino
 
     @property
-    def is_symlink(self):
+    def _is_symlink(self):
         """
         Whether this path is a symbolic link.
         """
@@ -388,7 +388,7 @@ class Path(_Path):
         except ValueError: return False
 
     @property
-    def is_block_device(self):
+    def _is_block_device(self):
         """
         Whether this path is a block device.
         """
@@ -399,7 +399,7 @@ class Path(_Path):
         except ValueError: return False
 
     @property
-    def is_char_device(self):
+    def _is_char_device(self):
         """
         Whether this path is a character device.
         """
@@ -410,7 +410,7 @@ class Path(_Path):
         except ValueError: return False
 
     @property
-    def is_fifo(self):
+    def _is_fifo(self):
         """
         Whether this path is a FIFO.
         """
@@ -421,7 +421,7 @@ class Path(_Path):
         except ValueError: return False
 
     @property
-    def is_socket(self):
+    def _is_socket(self):
         """
         Whether this path is a socket.
         """
@@ -431,6 +431,10 @@ class Path(_Path):
             return False
         except ValueError: return False
 
+
+PathLike = TypeVar('PathLike', type(_Path), Path, _Path, os.PathLike, str, Union[str, _Path], Union[str, Path], Union[str, os.PathLike])
+
 __all__ = [
-    'Path'
+    'Path',
+    'PathLike'
 ]
