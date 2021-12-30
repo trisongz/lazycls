@@ -197,7 +197,6 @@ class Env:
         if val: cls.set_env(key=to_key, value=val, override=override)
         return val
     
-    
     @classmethod
     def to_json(cls, src_key: str, to_key: str, to_path: Union[str, Path], default: str = '{}', override: bool = False, as_posix: bool = False):
         """ for things like GOOGLE_APPLICATION_CREDENTIALS that is json based
@@ -208,6 +207,23 @@ class Env:
         if not path.exists() or override: 
             data = os.getenv(src_key, default)
             from lazycls.serializers import OrJson
+            path.write_text(OrJson.dumps(OrJson.loads(data)), encoding='utf-8')            
+        cls.set_env(key=to_key, value=path.as_posix(), override=override)
+        if as_posix: return path.as_posix()
+        return path
+    
+    @classmethod
+    def to_json_b64(cls, src_key: str, to_key: str, to_path: Union[str, Path], default: str = '{}', override: bool = False, as_posix: bool = False):
+        """ for things like GOOGLE_APPLICATION_CREDENTIALS that is json based with base64 encoding
+            we read the env src_key, attempt to load it and then dump it in to_path
+            i.e. map src_key = ADC_DATA -> creates file at to_path -> sets env[to_key] = to_path (to_key = GOOGLE_APPLICATION_CREDENTIALS)
+        """
+        path = toPath(to_path, resolve=True)
+        if not path.exists() or override: 
+            from lazycls.serializers import OrJson, Base
+            data = os.getenv(src_key, None)
+            if data is not None: data = Base.b64_decode(data)
+            else: data = default
             path.write_text(OrJson.dumps(OrJson.loads(data)), encoding='utf-8')            
         cls.set_env(key=to_key, value=path.as_posix(), override=override)
         if as_posix: return path.as_posix()
