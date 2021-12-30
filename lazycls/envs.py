@@ -224,7 +224,7 @@ class Env:
             data = os.getenv(src_key, None)
             if data is not None: data = Base.b64_decode(data)
             else: data = default
-            path.write_text(OrJson.dumps(OrJson.loads(data)), encoding='utf-8')            
+            path.write_text(OrJson.dumps(OrJson.loads(data)), encoding='utf-8')
         cls.set_env(key=to_key, value=path.as_posix(), override=override)
         if as_posix: return path.as_posix()
         return path
@@ -292,9 +292,9 @@ class Env:
         path = toPath(path, resolve=True)
         cfg = {k: cls.encode_to_string(v) for k,v in configmap.items()}
         # now we encode it further
-        from lazycls.serializers import Base, Yaml
+        from lazycls.serializers import Base, Yaml, OrJson
         cfg = {k: Base.b64_gzip_encode(v) for k,v in cfg.items()}
-        path.write_text(Yaml.dumps(cfg))
+        path.write_text(Yaml.dumps(cfg) if path.suffix in {'.yml', '.yaml'} else OrJson.dumps(cfg))
         return path
     
     @classmethod
@@ -302,8 +302,8 @@ class Env:
         # Should only expect our serialized format.
         path = toPath(path, resolve=True)
         assert path.exists(), f'Invalid Path: {path.as_posix()} does not exist.'
-        from lazycls.serializers import Base, Yaml
-        cfg = Yaml.loads(path.read_text())
+        from lazycls.serializers import Base, Yaml, OrJson        
+        cfg = Yaml.loads(path.read_text()) if path.suffix in {'.yml', '.yaml'} else OrJson.loads(path.read_text())
         cfg = {k: Base.b64_gzip_decode(v) for k,v in cfg.items()}
         if set_as_env: 
             for k,v in cfg.items():
