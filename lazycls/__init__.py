@@ -8,6 +8,8 @@ from . import funcs
 from . import envs
 from . import timez
 from . import io
+from . import ext
+from . import typec
 
 from .prop import classproperty, ClasspropertyMeta
 from .utils import toPath, to_path

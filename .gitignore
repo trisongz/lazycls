@@ -11,3 +11,5 @@ __pycache__*
 *.egg-info*
 *.vscode
 *test_ops
+**test
+**.ipynb**
