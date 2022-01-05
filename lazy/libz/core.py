@@ -85,6 +85,8 @@ class LibType(type):
         if not cls.is_available(clean_lib):
             cls.install_library(pip_name or library, upgrade=upgrade)
 
+    def _ensure_binary_installed(cls, binary: str, flags: List[str] = None):
+        return cls.install_binary(binary, flags)
     
     def import_lib(cls, library: str, pip_name: str = None, resolve_missing: bool = True, require: bool = False, upgrade: bool = False):
         """ Lazily resolves libs.
