@@ -13,3 +13,5 @@ __pycache__*
 *test_ops
 **test
 **.ipynb**
+**_cache**
+**__lazycls**

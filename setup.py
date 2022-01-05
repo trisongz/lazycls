@@ -12,16 +12,27 @@ gitrepo = 'trisongz/lazycls'
 root = Path(__file__).parent
 
 requirements = [
-    'pydantic[dotenv]',
-    'orjson',
-    'pyyaml',
-    'pysimdjson',
+    #'aiofiles',
+    'anyio',
     'dill',
-    'aiofiles'
+    'fsspec',
+    'orjson',
+    'pydantic[dotenv]',
+    'pylogz',
+    'pysimdjson',
+    'pyyaml',
+    'sniffio',
+    'universal_pathlib'
 ]
 
+extras = {
+    'gcs': ['gcsfs'],
+    's3': ['s3fs'], 
+    'cloudfs': ['gcsfs', 's3fs'],
+}
+
 args = {
-    'packages': find_packages(include = ['lazycls', 'lazycls.*']),
+    'packages': find_packages(include = ['lazycls', 'lazycls.*', 'lazy', 'lazy.*']),
     'install_requires': requirements,
     'long_description': root.joinpath('README.md').read_text(encoding='utf-8'),
     'entry_points': {}
