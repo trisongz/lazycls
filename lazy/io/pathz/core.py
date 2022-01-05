@@ -3,6 +3,7 @@ import typing
 import ntpath
 import pathlib
 import posixpath
+from importlib import import_module
 from typing import Any, ClassVar, Iterator, Optional, Type, TypeVar, Union, Callable, List, TYPE_CHECKING
 from lazy.libz import Lib
 
@@ -12,17 +13,19 @@ from . import base
 _P = TypeVar('_P')
 
 
-URI_PREFIXES = ('gs://', 's3://', 'minio://')
-_URI_SCHEMES = frozenset(('gs', 's3', 'minio'))
+URI_PREFIXES = ('gs://', 's3://', 'minio://', 's3compat://')
+_URI_SCHEMES = frozenset(('gs', 's3', 'minio', 's3compat'))
 _URI_MAP_ROOT = {
     'gs://': '/gs/',
     's3://': '/s3/',
-    'minio://': '/minio/'
+    'minio://': '/minio/',
+    's3compat://': '/s3compat/'
 }
 _PROVIDER_MAP = {
     'gs': 'GoogleCloudStorage',
     's3': 'AmazonS3',
-    'minio': 'MinIO'
+    'minio': 'MinIO',
+    's3compat': 'S3Compatible'
 }
 
 
@@ -36,7 +39,8 @@ class _IOPath(pathlib.PurePath, base.ReadWritePath):
     _PATH: ClassVar[types.ModuleType]
     _FSX: ClassVar[types.ModuleType] = None
     _FSX_LIB: str = None
-    _FSX_MODULE: str = None
+    _FSX_MODULE: Optional[str] = None
+    _FSX_CLS: Optional[str] = None
     _SYNC_FS: ClassVar[types.ModuleType] = None
     _ASYNC_FS: ClassVar[types.ModuleType] = None
 
@@ -44,13 +48,15 @@ class _IOPath(pathlib.PurePath, base.ReadWritePath):
     def _ensure_lib(cls, *args, **kwargs):
         if cls._FSX is not None: return
         cls._FSX = Lib.import_lib(cls._FSX_LIB)
+        if cls._FSX_MODULE: cls._FSX = import_module(cls._FSX_MODULE, package=cls._FSX_LIB)
+        #cls._FSX = Lib.import_lib(cls._FSX_LIB)
 
     @classmethod
     def get_filesystem(cls, is_async: bool = False, *args, **kwargs):
         cls._ensure_lib()
         if is_async and cls._ASYNC_FS: return cls._ASYNC_FS
         if cls._SYNC_FS: return cls._SYNC_FS
-        authz = cls.get_auth_config(*args, **kwargs)
+        authz = cls.get_configz(*args, **kwargs)
         if is_async:
             cls._ASYNC_FS = getattr(cls._FSX, cls._FSX_MODULE)(asynchronous = True, **authz)
             return cls._ASYNC_FS
@@ -58,7 +64,7 @@ class _IOPath(pathlib.PurePath, base.ReadWritePath):
         return cls._SYNC_FS
     
     @classmethod
-    def get_auth_config(cls, *args, **kwargs):        
+    def get_configz(cls, *args, **kwargs):        
         return {}
 
     @property
@@ -634,7 +640,8 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
     _SYNC_FS: 'LocalFileSystem' = None
     _ASYNC_FS: 'LocalFileSystem' = None
     _FSX_LIB: str = 'fsspec'
-    _FSX_MODULE: str = 'LocalFileSystem'
+    _FSX_MODULE: Optional[str] = 'fsspec.implementations.local'
+    _FSX_CLS: str = 'LocalFileSystem'
 
     @classmethod
     def _get_filesystem(cls, is_async: bool = False, *args, **kwargs):
@@ -661,7 +668,7 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
 
     
     @classmethod
-    def get_auth_config(cls, *args, **kwargs):
+    def get_configz(cls, *args, **kwargs):
         return {}
     
     def exists(self) -> bool:
@@ -1373,7 +1380,9 @@ class PosixIOPath(PosixFSxPath, pathlib.PurePosixPath):
     _SYNC_FS: 'upath.UPath' = None
     _ASYNC_FS: Any = None
     _FSX_LIB: str = 'upath'
-    _FSX_MODULE: str = 'UPath'
+    _FSX_MODULE: Optional[str] = None
+    _FSX_CLS: str = 'UPath'
+
 
     @property
     def async_fs(self) -> 'AsyncFileSystem':

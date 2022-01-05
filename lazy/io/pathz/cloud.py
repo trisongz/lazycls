@@ -30,14 +30,14 @@ def get_cloudauthz():
 
 class PosixS3Path(PosixFSxPath, pathlib.PurePosixPath):
     """
-    Pathlib-like API around `fsspec.s3fs` providing Async Capabilities
+    AWS S3 Pathlib-like API around `fsspec.s3fs` providing Async Capabilities
     """
     _PATH = posixpath
     _FSX: 's3fs.S3FileSystem' = None
     _SYNC_FS: 's3fs.S3FileSystem' = None
     _ASYNC_FS: 's3fs.S3FileSystem' = None
     _FSX_LIB: str = 's3fs'
-    _FSX_MODULE: str = 'S3FileSystem'
+    _FSX_CLS: str = 'S3FileSystem'
     _AUTHZ: 'CloudAuthz' = None
 
     @property
@@ -58,27 +58,28 @@ class PosixS3Path(PosixFSxPath, pathlib.PurePosixPath):
         return cls._AUTHZ
 
     @classmethod
-    def get_auth_config(cls, reload: bool = False, **config):
+    def get_configz(cls, reload: bool = False, **config):
         authz = cls.get_authz(reload=reload, **config)
         _config = {}
         if authz.aws_access_key_id:
             _config['key'] = authz.aws_access_key_id
             _config['secret'] = authz.aws_secret_access_key
-        elif authz.aws_access_token:
-            _config['token'] = authz.aws_access_token
-        elif not authz.boto_config:
-            _config['anon'] = True
+        elif authz.aws_access_token: _config['token'] = authz.aws_access_token
+        elif not authz.boto_config: _config['anon'] = True
+        if authz.s3_config: _config['config_kwargs'] = authz.s3_config
         return _config
     
 
 class PosixGCSPath(PosixFSxPath, pathlib.PurePosixPath):
-    """Pathlib-like API around `fsspec.gcsfs` providing Async Capabilities"""
+    """
+    Google Cloud Storage Pathlib-like API around `fsspec.gcsfs` providing Async Capabilities
+    """
     _PATH = posixpath
     _FSX: 'gcsfs.GCSFileSystem' = None
     _SYNC_FS: 'gcsfs.GCSFileSystem' = None
     _ASYNC_FS: 'gcsfs.GCSFileSystem' = None
     _FSX_LIB: str = 'gcsfs'
-    _FSX_MODULE: str = 'GCSFileSystem'
+    _FSX_CLS: str = 'GCSFileSystem'
     _AUTHZ: 'CloudAuthz' = None
 
     @classmethod
@@ -89,11 +90,13 @@ class PosixGCSPath(PosixFSxPath, pathlib.PurePosixPath):
         return cls._AUTHZ
 
     @classmethod
-    def get_auth_config(cls, reload: bool = False, **config):
+    def get_configz(cls, reload: bool = False, **config):
         authz = cls.get_authz(reload=reload, **config)
         _config = {}
-        if authz.gauth: _config['token'] = authz.gauth
+        if authz.gcp_auth: _config['token'] = authz.gcp_auth
         if authz.gcloud_project or authz.google_cloud_project: _config['project'] = authz.gcloud_project or authz.google_cloud_project
+        if authz.gcs_client_config: _config['client_kwargs'] = authz.gcs_client_config
+        if authz.gcs_config: _config['config_kwargs'] = authz.gcs_config
         return _config
 
     @property
@@ -107,15 +110,78 @@ class PosixGCSPath(PosixFSxPath, pathlib.PurePosixPath):
         return self._SYNC_FS
 
 
+class PosixMinioPath(PosixS3Path, pathlib.PurePosixPath):
+    """
+    Minio-S3 Pathlib-like API around `fsspec.s3fs` providing Async Capabilities
+    """
+    _PATH = posixpath
+    _FSX: 's3fs.S3FileSystem' = None
+    _SYNC_FS: 's3fs.S3FileSystem' = None
+    _ASYNC_FS: 's3fs.S3FileSystem' = None
+    _FSX_LIB: str = 's3fs'
+    _FSX_CLS: str = 'S3FileSystem'
+    _AUTHZ: 'CloudAuthz' = None
+
+    @classmethod
+    def get_configz(cls, reload: bool = False, **config):
+        authz = cls.get_authz(reload=reload, **config)
+        _config = {}
+        if authz.minio_secret_key:
+            _config['key'] = authz.minio_access_key
+            _config['secret'] = authz.minio_secret_key
+        elif authz.minio_access_token: _config['token'] = authz.minio_access_token
+        _config['client_kwargs'] = {'endpoint_url': authz.minio_endpoint}
+        if authz.minio_config: _config['config_kwargs'] = authz.minio_config
+        return _config
+    
+
+class PosixS3CompatPath(PosixS3Path, pathlib.PurePosixPath):
+    """
+    S3-Compatible Pathlib-like API around `fsspec.s3fs` providing Async Capabilities
+    """
+    _PATH = posixpath
+    _FSX: 's3fs.S3FileSystem' = None
+    _SYNC_FS: 's3fs.S3FileSystem' = None
+    _ASYNC_FS: 's3fs.S3FileSystem' = None
+    _FSX_LIB: str = 's3fs'
+    _FSX_CLS: str = 'S3FileSystem'
+    _AUTHZ: 'CloudAuthz' = None
+
+    @classmethod
+    def get_configz(cls, reload: bool = False, **config):
+        authz = cls.get_authz(reload=reload, **config)
+        _config = {}
+        if authz.s3compat_secret_key:
+            _config['key'] = authz.s3compat_access_key
+            _config['secret'] = authz.s3compat_secret_key
+        elif authz.s3compat_access_token: _config['token'] = authz.s3compat_access_token
+        _config['client_kwargs'] = {'endpoint_url': authz.s3compat_endpoint}
+        if authz.s3compat_region: _config['client_kwargs']['region_name'] = authz.s3compat_region
+        if authz.s3compat_config: _config['config_kwargs'] = authz.s3compat_config
+        return _config
+
+
+
 class WindowsGCSPath(PosixGCSPath, pathlib.PureWindowsPath):
     _PATH = ntpath
 
 class WindowsS3Path(PosixS3Path, pathlib.PureWindowsPath):
     _PATH = ntpath
 
+class WindowsMinioPath(PosixMinioPath, pathlib.PureWindowsPath):
+    _PATH = ntpath
+
+class WindowsS3CompatPath(PosixS3CompatPath, pathlib.PureWindowsPath):
+    _PATH = ntpath
+
 
 os.PathLike.register(PosixGCSPath)
 os.PathLike.register(PosixS3Path)
+os.PathLike.register(PosixMinioPath)
+os.PathLike.register(PosixS3CompatPath)
 
 os.PathLike.register(WindowsGCSPath)
 os.PathLike.register(WindowsS3Path)
+os.PathLike.register(WindowsMinioPath)
+os.PathLike.register(WindowsS3CompatPath)
+

@@ -3,7 +3,6 @@
 """ 
 Requires fusepy and fuse
 - does not support win
-- uses multiprocess instead of multiprocessing
 """
 import sys
 import pathlib
@@ -21,6 +20,7 @@ from logz import get_logger
 
 
 logger = get_logger('fuze')
+FuseSystemType = Union[Type[AbstractFileSystem], Type[AsyncFileSystem]]
 
 class MountPoint(BaseCls):
     fuzer: str # Name of the class
@@ -56,11 +56,8 @@ class MountPoint(BaseCls):
 
 ## Keep track of all mounted
 _ALL_FUZES: Dict[str, MountPoint] = {}
-
 _FUZE_READY: bool = False
 _FUZE_ALLOWED: bool = not sys.platform.startswith('win')
-
-FuseSystemType = Union[Type[AbstractFileSystem], Type[AsyncFileSystem]]
 
 
 def _prepare_fuze():
@@ -68,7 +65,7 @@ def _prepare_fuze():
     assert _FUZE_ALLOWED, 'Windows is not supported'
     if _FUZE_READY: return
     Lib.import_cmd('fuse')
-    Lib._ensure_lib_installed('fusepy')
+    Lib._ensure_lib_installed('fuse', 'fusepy')
     _FUZE_READY = True
 
 def _add_proc(path: str, proc: threading.Thread):
@@ -160,7 +157,6 @@ Will use MemoryFileSystem as default
 class BaseFuzerCls:
     """
     Class that manages filesystem fuse mounts
-    supports gcs/s3(?)
     """
 
     _FSX: ModuleType = None

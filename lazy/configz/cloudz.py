@@ -4,6 +4,7 @@
 Cloud Provider Configs
 """
 from typing import Optional
+from lazy.types import pyd
 from .core import ConfigCls
 from .types import *
 
@@ -26,13 +27,17 @@ class CloudAuthz(ConfigCls):
     aws_secret_access_key: Optional[str] = ""
     aws_region: str = "us-east-1"
     set_s3_endpoint: Optional[bool] = True
+    s3_config: Optional[pyd.Json] = None
 
     """ 
     GCP Specific 
     """
-    gauth: GoogleAuthBGZ = ""
+    
     gcloud_project: Optional[str] = ""
     google_cloud_project: Optional[str] = ""
+    gcp_auth: GoogleAuthBGZ = ""
+    gcs_client_config: Optional[pyd.Json] = None
+    gcs_config: Optional[pyd.Json] = None
 
     """
     Minio Specific
@@ -40,7 +45,18 @@ class CloudAuthz(ConfigCls):
     minio_endpoint: Optional[str] = ""
     minio_access_key: Optional[str] = ""
     minio_secret_key: Optional[str] = ""
+    minio_access_token: Optional[str] = ""
+    minio_config: Optional[pyd.Json] = None
 
+    """
+    S3-Compatiable Generic
+    """
+    s3compat_endpoint: Optional[str] = ""
+    s3compat_region: Optional[str] = ""
+    s3compat_access_key: Optional[str] = ""
+    s3compat_secret_key: Optional[str] = ""
+    s3compat_access_token: Optional[str] = ""
+    s3compat_config: Optional[pyd.Json] = None
 
     @classmethod
     def get_s3_endpoint(cls):
@@ -110,11 +126,9 @@ class CloudAuthz(ConfigCls):
     
     @classmethod
     def update_authz(cls, **config):
-        new_cls = cls().update_config(**config)
-        cls = new_cls
+        cls.update_config(**config)
         cls.set_authz_env()
-        cls.reload()
-
+        
         
 
 

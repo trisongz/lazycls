@@ -18,14 +18,19 @@ _PATHLIKE_CLS: Tuple[PathLikeCls, ...] = (
     core.WindowsFSxPath,
     cloud.PosixGCSPath,
     cloud.PosixS3Path,
+    cloud.PosixMinioPath,
+    cloud.PosixS3CompatPath,
     cloud.WindowsGCSPath,
     cloud.WindowsS3Path,
+    cloud.WindowsMinioPath,
+    cloud.WindowsS3CompatPath,
 )
 
 _URI_PREFIXES_TO_CLS: Dict[str, PathLikeCls] = {
     'gs://': cloud.PosixGCSPath,
     's3://': cloud.PosixS3Path,
-    'minio://': cloud.PosixS3Path,
+    'minio://': cloud.PosixMinioPath,
+    's3compat://': cloud.PosixS3CompatPath,
 }
 
 
@@ -69,7 +74,7 @@ def as_path(path: PathLike) -> ReadWritePath:
         if len(uri_splits) > 1:    # str is URI (e.g. `gs://`, `github://`,...)
             # On windows, `PosixGCSPath` is created for `gs://` paths
             return _URI_PREFIXES_TO_CLS[uri_splits[0] + '://'](path)
-        elif is_windows: return core.WindowsGCSPath(path)
+        elif is_windows: return cloud.WindowsGCSPath(path)
         else: return core.PosixFSxPath(path)
     elif isinstance(path, _PATHLIKE_CLS):
         return path
