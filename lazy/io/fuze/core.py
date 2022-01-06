@@ -8,6 +8,7 @@ import os
 import sys
 import pathlib
 import threading
+import signal
 import multiprocessing as mproc
 
 from importlib import import_module
@@ -54,7 +55,10 @@ class MountPoint(BaseCls):
 
     def kill(self, timeout: int = 5):
         if self.thread: self.thread.join(timeout=timeout)
-        elif self.process: self.process.join(timeout=timeout)
+        elif self.process:
+            os.kill(self.process.pid, signal.SIGTERM) 
+            self.process.join(timeout=timeout)
+
         self.alive = False
         self.thread = None
         logger.info(f'[{self.fuzer}] Completed Unmount: {self.source}')
@@ -94,7 +98,7 @@ class MountPoint(BaseCls):
             #with _lock.acquire():
             #with threading.Lock() as _lockz:
             _lock.acquire()
-            self.process = mproc.Process(target=self._background, args=(fs, foreground, threads, ready_file), daemon=daemon)
+            self.process = mproc.Process(target=self._background, args=(fs, foreground, threads, ready_file,), daemon=daemon)
             self.process.start()
             _lock.release()
 
@@ -104,7 +108,7 @@ class MountPoint(BaseCls):
             #with _lock.acquire():
             #with threading._RLock() as _lock:
             _lock.acquire()
-            self.thread = threading.Thread(target=self._background, args=(fs, foreground, threads, ready_file), daemon = daemon)
+            self.thread = threading.Thread(target=self._background, args=(fs, foreground, threads, ready_file,), daemon = daemon)
             self.thread.start()
             _lock.release()
         
