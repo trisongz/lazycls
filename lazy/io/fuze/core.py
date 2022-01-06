@@ -11,13 +11,16 @@ import threading
 from importlib import import_module
 from fsspec import AbstractFileSystem
 from fsspec.asyn import AsyncFileSystem
-from fsspec.fuse import FUSEr, FUSE
+#from fsspec.fuse import FUSEr, FUSE
+
 from lazy.libz import Lib
 from typing import Dict, Type, Any, Optional, Union
 from types import ModuleType
 from lazy.models import BaseCls
 from logz import get_logger
 
+try: from fsspec.fuse import FUSEr, FUSE
+except ImportError: FUSEr = FUSE = object
 
 logger = get_logger('fuze')
 FuseSystemType = Union[Type[AbstractFileSystem], Type[AsyncFileSystem]]
@@ -102,7 +105,7 @@ def get_cloudauthz():
         _authz = CloudAuthz
     return _authz
 
-def run_fuze(fs: FuseSystemType, mount_point: MountPoint, foreground=True, threads=False, ready_file=False, ops_class=FUSEr):
+def run_fuze(fs: FuseSystemType, mount_point: MountPoint, foreground: bool = True, threads=False, ready_file: bool = False, ops_class: 'FUSEr' = None):
     """Mount stuff in a local directory
     This uses fusepy to make it appear as if a given path on an fsspec
     instance is in fact resident within the local file-system.
@@ -130,6 +133,8 @@ def run_fuze(fs: FuseSystemType, mount_point: MountPoint, foreground=True, threa
         To override the default behavior of FUSEr. For Example, logging
         to file.
     """
+    from fsspec.fuse import FUSE, FUSEr
+    if not ops_class: ops_class = FUSEr
     mount_point.target_path.mkdir(parents=True, exist_ok=True)
     func = lambda: FUSE(ops_class(fs, mount_point.source, ready_file=ready_file), mount_point.target_path_str, nothreads=not threads, foreground=foreground)
     if not foreground:
