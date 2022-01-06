@@ -108,29 +108,30 @@ class CloudAuthz(ConfigCls):
     @classmethod
     def set_authz_env(cls):
         from lazy.cmd.contrib import export
-        if cls.gcp_auth: export(GOOGLE_APPLICATION_CREDENTIALS=cls.gcp_auth)
-        elif cls.gauth: export(GOOGLE_APPLICATION_CREDENTIALS=cls.gauth)
+        _authz = cls()
+        if _authz.gcp_auth: export(GOOGLE_APPLICATION_CREDENTIALS=_authz.gcp_auth)
+        elif _authz.gauth: export(GOOGLE_APPLICATION_CREDENTIALS=_authz.gauth)
 
-        if cls.gcloud_project: export(GOOGLE_CLOUD_PROJECT=cls.gcloud_project or cls.google_cloud_project)
-        botopath = cls.get_boto_path()
+        if _authz.gcloud_project: export(GOOGLE_CLOUD_PROJECT=_authz.gcloud_project or _authz.google_cloud_project)
+        botopath = _authz.get_boto_path()
         ## We know this is our custom botofile
-        if botopath.exists() and cls.should_write_boto():
+        if botopath.exists() and _authz.should_write_boto():
             export(BOTO_PATH=botopath.as_posix())
             export(BOTO_CONFIG=botopath.as_posix())
-        if cls.aws_access_key_id:
-            export(AWS_ACCESS_KEY_ID=cls.aws_access_key_id)
-            export(AWS_SECRET_ACCESS_KEY=cls.aws_secret_access_key)
-        if cls.set_s3_endpoint:
-            export(S3_ENDPOINT=cls.get_s3_endpoint())
-        if cls.minio_access_key:
-            export(MINIO_ACCESS_KEY=cls.minio_access_key)
-            export(MINIO_SECRET_KEY=cls.minio_secret_key)
-        if cls.minio_endpoint:
-            export(MINIO_ENDPOINT=cls.minio_endpoint)
+        if _authz.aws_access_key_id:
+            export(AWS_ACCESS_KEY_ID=_authz.aws_access_key_id)
+            export(AWS_SECRET_ACCESS_KEY=_authz.aws_secret_access_key)
+        if _authz.set_s3_endpoint:
+            export(S3_ENDPOINT=_authz.get_s3_endpoint())
+        if _authz.minio_access_key:
+            export(MINIO_ACCESS_KEY=_authz.minio_access_key)
+            export(MINIO_SECRET_KEY=_authz.minio_secret_key)
+        if _authz.minio_endpoint:
+            export(MINIO_ENDPOINT=_authz.minio_endpoint)
     
     @classmethod
     def update_authz(cls, **config):
-        cls.update_config(**config)
+        cls().update_config(**config)
         cls.set_authz_env()
         
         
