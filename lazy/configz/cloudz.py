@@ -25,7 +25,7 @@ class CloudAuthz(ConfigCls):
     aws_access_token: Optional[str] = ""
     aws_access_key_id: Optional[str] = ""
     aws_secret_access_key: Optional[str] = ""
-    aws_region: str = "us-east-1"
+    aws_region: Optional[str] = "us-east-1"
     set_s3_endpoint: Optional[bool] = True
     s3_config: Optional[pyd.Json] = None
 
@@ -35,8 +35,8 @@ class CloudAuthz(ConfigCls):
     
     gcloud_project: Optional[str] = ""
     google_cloud_project: Optional[str] = ""
-    gauth: GoogleAuthBGZ = "" # Kept for compatability
-    gcp_auth: GoogleAuthBGZ = ""
+    gauth: Optional[GoogleAuthBGZ] = "" # Kept for compatability
+    gcp_auth: Optional[GoogleAuthBGZ] = ""
     gcs_client_config: Optional[pyd.Json] = None
     gcs_config: Optional[pyd.Json] = None
 
@@ -108,7 +108,10 @@ class CloudAuthz(ConfigCls):
     @classmethod
     def set_authz_env(cls):
         from lazy.cmd.contrib import export
-        if cls.gauth: export(GOOGLE_APPLICATION_CREDENTIALS=cls.gauth)
+        if cls.gcp_auth: export(GOOGLE_APPLICATION_CREDENTIALS=cls.gcp_auth)
+        elif cls.gauth: export(GOOGLE_APPLICATION_CREDENTIALS=cls.gauth)
+
+        if cls.gcloud_project: export(GOOGLE_CLOUD_PROJECT=cls.gcloud_project or cls.google_cloud_project)
         botopath = cls.get_boto_path()
         ## We know this is our custom botofile
         if botopath.exists() and cls.should_write_boto():
