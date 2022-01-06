@@ -34,6 +34,12 @@ class MountPoint(BaseCls):
     alive: bool = True
 
     @property
+    def source_path(self):
+        uri_splits = self.source.split('://', maxsplit=1)
+        if len(uri_splits) > 1: return uri_splits[-1].strip()
+        return self.source
+
+    @property
     def target_path(self):
         return pathlib.Path(self.mount_point).resolve()
     
@@ -142,7 +148,7 @@ def run_fuze(fs: FuseSystemType, mount_point: MountPoint, foreground: bool = Tru
     from fsspec.fuse import FUSE, FUSEr
     if not ops_class: ops_class = FUSEr
     mount_point.target_path.mkdir(parents=True, exist_ok=True)
-    func = lambda: FUSE(ops_class(fs, mount_point.source, ready_file=ready_file), mount_point.target_path_str, nothreads=not threads, foreground=foreground)
+    func = lambda: FUSE(ops_class(fs, mount_point.source_path, ready_file=ready_file), mount_point.target_path_str, nothreads=not threads, foreground=foreground)
     if not foreground:
         th = threading.Thread(target=func)
         th.daemon = True
@@ -199,6 +205,12 @@ class BaseFuzerCls:
         configz = cls.get_configz(*args, **kwargs)
         if fs_args: configz.update(fs_args)
         return getattr(cls._FSX, cls._FSX_CLS)(**configz)
+    
+    @classmethod
+    def _strip_prefix(cls, source: str):
+        uri_splits = source.split('://', maxsplit=1)
+        if len(uri_splits) > 1: return uri_splits[-1].strip()
+        return source
 
     @classmethod
     def mount(cls, source: str, mount_path: str, ready_file: bool = True, foreground: bool = False, threads: bool = False, fs_args: Dict[str, Any] = {}, cleanup: bool = True, *args, **kwargs) -> None:
