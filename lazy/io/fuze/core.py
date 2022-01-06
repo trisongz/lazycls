@@ -91,16 +91,22 @@ class MountPoint(BaseCls):
         #if not ops_class: ops_class = _FUSEr
         self.target_path.mkdir(parents=True, exist_ok=True)
         if use_mp:
-            with _lock.acquire():
-                self.process = mproc.Process(target=self._background, args=(fs, foreground, threads, ready_file), daemon=daemon)
-                self.process.start()
+            #with _lock.acquire():
+            #with threading.Lock() as _lockz:
+            _lock.acquire()
+            self.process = mproc.Process(target=self._background, args=(fs, foreground, threads, ready_file), daemon=daemon)
+            self.process.start()
+            _lock.release()
 
             #with threading.RLock() as _lock:
             #    _lock.acquire()
         elif not foreground:
-            with _lock.acquire():
-                self.thread = threading.Thread(target=self._background, args=(fs, foreground, threads, ready_file), daemon = daemon)
-                self.thread.start()
+            #with _lock.acquire():
+            #with threading._RLock() as _lock:
+            _lock.acquire()
+            self.thread = threading.Thread(target=self._background, args=(fs, foreground, threads, ready_file), daemon = daemon)
+            self.thread.start()
+            _lock.release()
         
         else:
             self._background(fs, foreground = foreground, threads = threads, ready_file = ready_file)
