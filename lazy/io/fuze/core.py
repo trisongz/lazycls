@@ -52,6 +52,34 @@ class MountPoint(BaseCls):
         self.alive = False
         self.thread = None
         logger.info(f'[{self.fuzer}] Completed Unmount: {self.source}')
+    
+    def mount(self, fs: FuseSystemType, foreground: bool = True, threads: bool = False, ready_file: bool = False, ops_class: 'FUSEr' = None):
+        from fsspec.fuse import FUSE as _FUSE
+        from fsspec.fuse import FUSEr as _FUSEr
+        if not ops_class: ops_class = _FUSEr
+        self.target_path.mkdir(parents=True, exist_ok=True)
+
+        func = lambda: _FUSE(
+            ops_class(fs, self.source_path, ready_file=ready_file), 
+            self.target_path_str, 
+            nothreads=not threads, 
+            foreground=foreground)
+        if not foreground:
+            th = threading.Thread(target=func)
+            th.daemon = True
+            th.start()
+            logger.info(f'Started Mount {self.source} -> {self.target_path_str} in Background')
+            self.thread = th
+            _add_proc(self.mount_point, self)
+
+        else:  # pragma: no cover
+            try:
+                logger.info(f'Started Mount {self.source} -> {self.target_path_str} in Foreground')
+                func()
+            except KeyboardInterrupt:
+                _kill_proc(self.mount_point)
+                #sys.exit()
+
 
     def unmount(self, timeout: int = 5):
         #if not self.alive and self.thread is None: return
@@ -231,8 +259,9 @@ class BaseFuzerCls:
         _prepare_fuze()
         logger.info(f'[{cls.__name__}] Starting Mount')
         fs = cls.get_filesystem(fs_args, *args, **kwargs)
-        mp = MountPoint(fuzer = cls.__name__, source=source, mount_point=mount_path, cleanup=cleanup)
-        run_fuze(fs, mp, foreground=foreground, threads=threads, ready_file=ready_file)
+        _mp = MountPoint(fuzer = cls.__name__, source=source, mount_point=mount_path, cleanup=cleanup)
+        _mp.mount(fs, foreground = foreground, threads = threads, ready_file = ready_file)
+        #run_fuze(fs, mp, foreground=foreground, threads=threads, ready_file=ready_file)
     
     @classmethod
     def unmount(cls, mount_path: str, timeout: int = 5, force: bool = False) -> None:
