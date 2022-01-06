@@ -90,3 +90,8 @@ def get_path(filepath: Union[str, PathLike]) -> _PATHLIKE_CLS:
 def get_pathlike(filepath: Union[str, PathLike]) -> _PATHLIKE_CLS:
     if isinstance(filepath, str): filepath = as_path(filepath)
     return filepath
+
+def get_userhome(as_pathz: bool = True):
+    h = os.path.expanduser('~')
+    if as_pathz: return as_path(h)
+    return h

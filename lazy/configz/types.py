@@ -174,9 +174,9 @@ except ImportError:
     PathzPath = Tuple[str, Type[pathlib.Path], Type[os.PathLike]]
 
 
-def _get_pathio() -> 'PathzPath':
+def _get_pathio(p) -> 'PathzPath':
     from lazy.io import get_path
-    return get_path
+    return get_path(p)
 
 class PathStr(EnvType):
     """
@@ -187,8 +187,26 @@ class PathStr(EnvType):
     
     @classmethod
     def cast(cls, v: str) -> 'PathLike':
+        #from lazy.io import get_path
+        # Fix Home
+        if '~' in v: v = v.replace('~', os.path.expanduser('~'))
         ## will import dynamically later.
         return _get_pathio(v).resolve()
+    
+    @classmethod
+    def validate(cls, v):
+        if v is None: return cls.get_default_value()
+        if not v: return cls.get_to_env_value()
+        try: 
+            val = cls.cast(v)
+            if cls.to_env_key:
+                to_val = cls.cast_to_env(val)
+                cls.set_to_env(to_val)
+                return to_val
+            return val
+        except Exception as e: 
+            print(e)
+            return ""
 
 
 class JsonB64Str(EnvType):
@@ -248,6 +266,21 @@ class AuthzFileStr(EnvType):
         data = cls.dump_decoded(v)
         if data: return cls.write_to_file(data)
         return cur_env_val
+    
+    @classmethod
+    def validate(cls, v):
+        if v is None: return cls.get_default_value()
+        if not v: return cls.get_to_env_value()
+        try: 
+            val = cls.cast(v)
+            if cls.to_env_key:
+                to_val = cls.cast_to_env(val)
+                cls.set_to_env(to_val)
+                return to_val
+            return val
+        except Exception as e: 
+            print(e)
+            return ""
 
 """
 Cloud Providers
@@ -268,6 +301,7 @@ class GoogleAuthJsonStr(AuthzFileStr):
     def to_env_path(cls):
         if Lib.is_avail_colab: return _get_pathio('/authz/adc.json')
         return _get_pathio(pathlib.Path.cwd().joinpath('authz', 'adc.json').as_posix())
+    
     
     @classmethod
     def cast(cls, v: str): return Serialize.Json.loads(v)

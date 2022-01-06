@@ -802,6 +802,8 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         """
         Create a new directory at this given path.
         """
+        ## Will return if exist_ok first, otherwise will fail check
+        if self.exists() and exist_ok: return
         return self.sync_fs.mkdir(self._cpath_str, mode=mode, create_parents=parents, exist_ok=exist_ok)
 
     def move(self, dest: base.PathLike, recursive: bool = False, maxdepth: Optional[int] = None, overwrite: bool = False, skip_errors: bool = False, **kwargs):
@@ -1228,6 +1230,7 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         """
         Create a new directory at this given path.
         """
+        if self.exists() and exist_ok: return
         return await self.async_fs.mkdir(self._cpath_str, mode=mode, create_parents=parents, exist_ok=exist_ok)
 
     async def async_move(self, dest: base.PathLike, recursive: bool = False, maxdepth: Optional[int] = None, overwrite: bool = False, skip_errors: bool = False, **kwargs):

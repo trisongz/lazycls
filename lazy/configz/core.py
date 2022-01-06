@@ -134,25 +134,7 @@ class ConfigCls(BaseSettings, metaclass=ConfigClsMeta):
     def update_config(self, **kwargs) -> Type["Config"]:
         if not kwargs: return
         self.reload(**kwargs)
-        #return self.__new__(self.copy(update=dict(kwargs.items()), deep=True))
     
-    def __getattribute__(self, name: str):
-        return self.dict().get(name, getattr(self, name))
-        #return getattr(self, name, self.dict().get(name))
-
-    #@property
-    #def keys(self):
-    #    return self.dict().keys()
-    
-    #@property
-    #def values(self):
-    #    return self.dict().values()
-
-    #@property
-    #def items(self):
-    #    return self.dict().items()
-
-
 
 def populate_globals(globs=None):
     """

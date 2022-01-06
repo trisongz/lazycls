@@ -4,7 +4,7 @@ from . import core
 from . import cloud
 from . import generic
 
-from .generic import as_path, get_path, PathLike, register_pathlike_cls
+from .generic import as_path, get_path, PathLike, register_pathlike_cls, get_userhome
 
 to_path = get_path
 
