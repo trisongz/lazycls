@@ -54,7 +54,7 @@ class MountPoint(BaseCls):
         logger.info(f'[{self.fuzer}] Completed Unmount: {self.source}')
 
     def unmount(self, timeout: int = 5):
-        if not self.alive and not self.thread: return
+        #if not self.alive and self.thread is None: return
         logger.info(f'[{self.fuzer}] Unmounting: {self.source} -> {self.target_path.as_posix()}')
         self.kill(timeout)
         if self.cleanup:
@@ -148,7 +148,11 @@ def run_fuze(fs: FuseSystemType, mount_point: MountPoint, foreground: bool = Tru
     from fsspec.fuse import FUSE, FUSEr
     if not ops_class: ops_class = FUSEr
     mount_point.target_path.mkdir(parents=True, exist_ok=True)
-    func = lambda: FUSE(ops_class(fs, mount_point.source_path, ready_file=ready_file), mount_point.target_path_str, nothreads=not threads, foreground=foreground)
+    func = lambda: FUSE(
+        ops_class(fs, mount_point.source_path, ready_file=ready_file), 
+        mount_point.target_path_str, 
+        nothreads=not threads, 
+        foreground=foreground)
     if not foreground:
         th = threading.Thread(target=func)
         th.daemon = True
@@ -163,7 +167,7 @@ def run_fuze(fs: FuseSystemType, mount_point: MountPoint, foreground: bool = Tru
             func()
         except KeyboardInterrupt:
             _kill_proc(mount_point.mount_point)
-            sys.exit()
+            #sys.exit()
 
 
 
