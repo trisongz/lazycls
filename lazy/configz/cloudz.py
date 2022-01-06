@@ -36,7 +36,8 @@ class CloudAuthz(ConfigCls):
     gcloud_project: Optional[str] = ""
     google_cloud_project: Optional[str] = ""
     gauth: Optional[GoogleAuthBGZ] = "" # Kept for compatability
-    gcp_auth: Optional[GoogleAuthBGZ] = ""
+    gcp_auth: GoogleAuthBGZ = ""
+    gcp_auth: GoogleAuthBGZ = ""
     gcs_client_config: Optional[pyd.Json] = None
     gcs_config: Optional[pyd.Json] = None
 
@@ -63,6 +64,10 @@ class CloudAuthz(ConfigCls):
         auto_init = True
 
     @classmethod
+    def get(cls, value: str, default=None):
+        return cls.dict().get(value, default)
+
+    @classmethod
     def get_s3_endpoint(cls):
         #_authz = cls()
         return f'https://s3.{cls.aws_region}.amazonaws.com'
@@ -86,18 +91,18 @@ class CloudAuthz(ConfigCls):
     @classmethod
     def get_boto_values(cls):
         t = "[Credentials]\n"
-        if cls.aws_access_key_id:
-            t += f"aws_access_key_id = {cls.aws_access_key_id}\n"
-            t += f"aws_secret_access_key = {cls.aws_secret_access_key}\n"
-        if cls.gauth.to_env_path.exists():
-            t += f"gs_service_key_file = {cls.gauth}\n"
+        if cls.get('aws_access_key_id'):
+            t += f"aws_access_key_id = {cls.get('aws_access_key_id')}\n"
+            t += f"aws_secret_access_key = {cls.get('aws_secret_access_key')}\n"
+        if cls.get('gauth') and cls.get('gauth').to_env_path.exists():
+            t += f"gs_service_key_file = {cls.get('gauth')}\n"
         t += "\n[Boto]\n"
         t += "https_validate_certificates = True\n"
         t += "\n[GSUtil]\n"
         t += "content_language = en\n"
         t += "default_api_version = 2\n"
-        if cls.gcloud_project or cls.google_cloud_project:
-            t += f"default_project_id = {cls.gcloud_project or cls.google_cloud_project}\n"
+        if cls.get('gcloud_project') or cls.get('google_cloud_project'):
+            t += f"default_project_id = {cls.get('gcloud_project') or cls.get('google_cloud_project')}\n"
         return t
 
     @classmethod
@@ -130,7 +135,7 @@ class CloudAuthz(ConfigCls):
                 logger.error(f'Botofile {p.as_posix()} exists and overwrite is False. Not overwriting')
             return p
         else: 
-            logger.warning(f'Skipping writing Botofile as BotoConfig = {cls.boto_config.as_posix()} exists')
+            logger.warning(f'Skipping writing Botofile as BotoConfig = {cls.get("boto_config").as_posix()} exists')
             return cls.boto_config
 
 
@@ -138,8 +143,8 @@ class CloudAuthz(ConfigCls):
     def set_authz_env(cls):
         from lazy.cmd.contrib import export
         #_authz = cls()
-        if cls.gcp_auth: export(GOOGLE_APPLICATION_CREDENTIALS=cls.gcp_auth)
-        elif cls.gauth: export(GOOGLE_APPLICATION_CREDENTIALS=cls.gauth)
+        if cls.get('gcp_auth'): export(GOOGLE_APPLICATION_CREDENTIALS=cls.gcp_auth)
+        elif cls.get('gauth'): export(GOOGLE_APPLICATION_CREDENTIALS=cls.gauth)
 
         if cls.gcloud_project: export(GOOGLE_CLOUD_PROJECT=cls.gcloud_project or cls.google_cloud_project)
         botopath = cls.get_boto_path()

@@ -136,6 +136,10 @@ class ConfigCls(BaseSettings, metaclass=ConfigClsMeta):
         self.reload(**kwargs)
         #return self.__new__(self.copy(update=dict(kwargs.items()), deep=True))
     
+    def __getattribute__(self, name: str):
+        return self.dict().get(name, getattr(self, name))
+        #return getattr(self, name, self.dict().get(name))
+
     #@property
     #def keys(self):
     #    return self.dict().keys()
