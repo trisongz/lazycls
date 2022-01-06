@@ -34,6 +34,7 @@ extras = {
 args = {
     'packages': find_packages(include = ['lazycls', 'lazycls.*', 'lazy', 'lazy.*']),
     'install_requires': requirements,
+    'include_package_data': True,
     'long_description': root.joinpath('README.md').read_text(encoding='utf-8'),
     'entry_points': {}
 }
