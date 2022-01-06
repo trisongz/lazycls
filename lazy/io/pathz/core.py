@@ -823,7 +823,7 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         self.sync_fs.move(self._cpath_str, _dest._cpath_str, recursive = recursive, maxdepth=maxdepth)
         return _dest
 
-    def open(self, mode: str = 'r', encoding: Optional[str] = base.DEFAULT_ENCODING, errors: Optional[str] = None, block_size: int = 5242880, compression: str = 'inferred', **kwargs: Any) -> typing.IO[Union[str, bytes]]:
+    def open(self, mode: str = 'r', encoding: Optional[str] = base.DEFAULT_ENCODING, errors: Optional[str] = None, block_size: int = 5242880, compression: str = 'infer', **kwargs: Any) -> typing.IO[Union[str, bytes]]:
         """Opens the file."""
         filelike = self.sync_fs.open(self._cpath_str, mode=mode, encoding=encoding, errors=errors, block_size=block_size, compression=compression, **kwargs)
         filelike = typing.cast(typing.IO[Union[str, bytes]], filelike)
@@ -1250,7 +1250,7 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         await self.async_fs.move(self._cpath_str, _dest._cpath_str, recursive = recursive, maxdepth=maxdepth)
         return _dest
 
-    async def async_open(self, mode: str = 'r', encoding: Optional[str] = base.DEFAULT_ENCODING, errors: Optional[str] = None, block_size: int = 5242880, compression: str = 'inferred', **kwargs: Any) -> typing.IO[Union[str, bytes]]:
+    async def async_open(self, mode: str = 'r', encoding: Optional[str] = base.DEFAULT_ENCODING, errors: Optional[str] = None, block_size: int = 5242880, compression: str = 'infer', **kwargs: Any) -> typing.IO[Union[str, bytes]]:
         """Opens the file."""
         filelike = await self.async_fs.open(self._cpath_str, mode=mode, encoding=encoding, errors=errors, block_size=block_size, compression=compression, **kwargs)
         filelike = typing.cast(typing.IO[Union[str, bytes]], filelike)

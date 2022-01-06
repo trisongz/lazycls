@@ -181,7 +181,8 @@ class SimdJson(JsonBase):
     parser_enabled: bool = True
     
     @classmethod
-    def _encode(cls, obj: Dict[Any, Any], *args, default: Dict[Any, Any] = None, **kwargs) -> str:
+    def _encode(cls, obj: Any, *args, default: Dict[Any, Any] = None, **kwargs) -> str:
+        if isinstance(obj, (SimdObject, SimdArray)): obj = obj.data
         return _simdjson.dumps(obj, default=default, *args, **kwargs)
     
     @classmethod
@@ -198,14 +199,17 @@ class SimdJson(JsonBase):
     def decode(cls, data: Any, *args, **kwargs) -> Union[Dict[Any, Any], List[str]]:
         if isinstance(data, (dict, list, set)): return data
         if issubclass(data, BaseModel): return data.dict()
-        if issubclass(data, _simdjson.Object) or isinstance(data, _simdjson.Object): return data.as_dict()
-        if issubclass(data, _simdjson.Array) or isinstance(data, _simdjson.Array): return data.as_list()
-        if issubclass(data, SimdObject, SimdArray) or isinstance(data, SimdObject, SimdArray): return data.data
+        #if issubclass(data, _simdjson.Object) or isinstance(data, _simdjson.Object): return data.as_dict()
+        #if issubclass(data, _simdjson.Array) or isinstance(data, _simdjson.Array): return data.as_list()
+        if isinstance(data, _simdjson.Object): return data.as_dict()
+        if isinstance(data, _simdjson.Array): return data.as_list()
+        if isinstance(data, (SimdObject, SimdArray)): return data.data
         if isinstance(data, (str, bytes)): return _simdjson.loads(data)
         raise ValueError
     
     @classmethod
-    async def _async_encode(cls, obj: Dict[Any, Any], *args, default: Dict[Any, Any] = None, **kwargs) -> str:
+    async def _async_encode(cls, obj: Any, *args, default: Dict[Any, Any] = None, **kwargs) -> str:
+        if isinstance(obj, (SimdObject, SimdArray)): obj = obj.data
         return _simdjson.dumps(obj, default=default, *args, **kwargs)
     
     @classmethod
@@ -220,11 +224,12 @@ class Json(JsonBase):
     parser_enabled: bool = True
 
     @staticmethod
-    def decode(data: Any, *args, **kwargs) -> Union[Dict[Any, Any], List[str]]:
-        return SimdJson.decode(data, *args, **kwargs)
+    def parse(data: Any, *args, **kwargs) -> Union[Union[_simdjson.Object, _simdjson.Array], Union[Dict[Any, Any], List[str]]]:
+        return SimdJson.parse(data, *args, **kwargs)
     
     @staticmethod
-    def _encode(obj: Dict[Any, Any], *args, default: Dict[Any, Any] = None, **kwargs) -> str:
+    def _encode(obj: Any, *args, default: Dict[Any, Any] = None, **kwargs) -> str:
+        if isinstance(obj, (SimdObject, SimdArray)): obj = obj.data
         return OrJson._encode(obj, default=default, *args, **kwargs)
     
     @classmethod
@@ -233,7 +238,8 @@ class Json(JsonBase):
         return OrJson._decode(data, *args, **kwargs)
     
     @staticmethod
-    async def _async_encode(obj: Dict[Any, Any], *args, default: Dict[Any, Any] = None, **kwargs) -> str:
+    async def _async_encode(obj: Any, *args, default: Dict[Any, Any] = None, **kwargs) -> str:
+        if isinstance(obj, (SimdObject, SimdArray)): obj = obj.data
         return await OrJson._async_encode(obj, default=default, *args, **kwargs)
     
     @classmethod

@@ -183,5 +183,5 @@ class SimdObject(object):
         return self.json
 
 def create_simdobj(data: Union[_simdjson.Object, _simdjson.Array]):
-    if issubclass(data, _simdjson.Object) or isinstance(data, _simdjson.Object): return SimdObject(data)
+    if isinstance(data, _simdjson.Object): return SimdObject(data)
     return SimdArray(data)

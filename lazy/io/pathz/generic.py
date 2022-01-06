@@ -1,6 +1,7 @@
 
 import os
 import typing
+import pathlib
 from typing import Callable, Dict, Tuple, Type, Union, TypeVar, List
 
 from . import core
@@ -83,15 +84,32 @@ def as_path(path: PathLike) -> ReadWritePath:
         return path_cls(path)
     else: raise TypeError(f'Invalid path type: {path!r}')
 
-def get_path(filepath: Union[str, PathLike]) -> _PATHLIKE_CLS:
-    if isinstance(filepath, str): filepath = as_path(filepath)
-    return filepath
-
-def get_pathlike(filepath: Union[str, PathLike]) -> _PATHLIKE_CLS:
-    if isinstance(filepath, str): filepath = as_path(filepath)
-    return filepath
 
 def get_userhome(as_pathz: bool = True):
     h = os.path.expanduser('~')
     if as_pathz: return as_path(h)
     return h
+
+def get_cwd():
+    return os.getcwd()
+
+def resolve_relative(filepath: Union[str, PathLike]) -> str:
+    if not isinstance(filepath, str): filepath = filepath.as_posix()
+    if '://' in filepath: return filepath
+    if filepath.startswith('~'): filepath = filepath.replace('~', get_userhome(), 1)
+    elif filepath.startswith('../'): filepath = filepath.replace('..', get_cwd(), 1)
+    elif filepath.startswith('..'): filepath = filepath.replace('..', pathlib.Path(get_cwd()).parent.parent.as_posix() + '/', 1)
+    elif filepath.startswith('./'): filepath = filepath.replace('.', get_cwd(), 1)
+    elif filepath.startswith('.'): filepath = filepath.replace('.', pathlib.Path(get_cwd()).parent.as_posix() + '/', 1)
+    return filepath
+
+def get_path(filepath: Union[str, PathLike], resolve: bool = True) -> _PATHLIKE_CLS:
+    if resolve: filepath = resolve_relative(filepath)
+    if isinstance(filepath, str): filepath = as_path(filepath)
+    return filepath
+
+def get_pathlike(filepath: Union[str, PathLike], resolve: bool = True) -> _PATHLIKE_CLS:
+    if resolve: filepath = resolve_relative(filepath)
+    if isinstance(filepath, str): filepath = as_path(filepath)
+    return filepath
+

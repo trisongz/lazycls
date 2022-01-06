@@ -6,8 +6,12 @@ import sys
 import importlib
 import subprocess
 import pkg_resources
-
+import pathlib
 from typing import List
+
+_root_path = pathlib.Path(__file__).parent
+_scriptz_path = _root_path.joinpath('scriptz')
+_bash_scriptz_path = _scriptz_path.joinpath('bash')
 
 
 def get_variable_separator():
@@ -137,6 +141,25 @@ class LibType(type):
     
     def is_exec_available(cls, executable: str) -> bool:
         return bool(cls.get_binary_path(executable) is not None)
+    
+    def run_bash(cls, cmd: str = None, bash_name: str = 'bash', *args, **kwargs):
+        """
+        Utility to run bash command
+
+        Lib.run_bash('/path/to/script.sh') -> bash /path/to/script.sh
+        """
+
+        from lazy.cmd import Cmd
+        bash = Cmd(bash_name)
+        return bash(cmd, *args, **kwargs).val
+    
+    def run_bash_script(cls, script_name: str, *args, **kwargs):
+
+        if not script_name.endswith('.sh'): script_name += script_name + '.sh'
+        scriptz = _bash_scriptz_path.joinpath(script_name)
+        assert scriptz.exists(), f'Invalid Script: {script_name} does not exist.'
+        cls.run_bash(cmd=scriptz.as_posix())
+
 
     def __getattr__(cls, key):
         """
@@ -173,6 +196,9 @@ class LibType(type):
             return cls.import_cmd(binary=binary_name)
         
         return cls.import_lib(key, resolve_missing=False, require=False)
+    
+    
+
         
 class Lib(metaclass=LibType):
     pass

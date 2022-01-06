@@ -156,6 +156,7 @@ class MountPoint(BaseCls):
 _ALL_FUZES: Dict[str, MountPoint] = {}
 _FUZE_READY: bool = False
 _FUZE_ALLOWED: bool = not sys.platform.startswith('win')
+_FUZE3_ALLOWED: bool = sys.platform.startswith('linux')
 
 
 def _prepare_fuze():

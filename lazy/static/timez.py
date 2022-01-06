@@ -9,6 +9,6 @@ TimeValues: Dict[str, int] = {
     'mins': 60,
     'hrs': 60,
     'days': 24,
-    'wks': 7,
-    'mnths': 4
+    'weeks': 7,
+    'months': 4
 }
