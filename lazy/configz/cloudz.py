@@ -61,47 +61,52 @@ class CloudAuthz(ConfigCls):
 
     @classmethod
     def get_s3_endpoint(cls):
-        return f'https://s3.{cls.aws_region}.amazonaws.com'
+        _authz = cls()
+        return f'https://s3.{_authz.aws_region}.amazonaws.com'
 
     @classmethod
     def get_boto_path(cls):
-        if cls.boto_config and cls.boto_config.exists(): return cls.boto_config
-        cls.authz_dir.mkdir(parents=True, exist=True)
-        return cls.authz_dir.joinpath('.boto')
+        _authz = cls()
+        if _authz.boto_config and _authz.boto_config.exists(): return _authz.boto_config
+        _authz.authz_dir.mkdir(parents=True, exist=True)
+        return _authz.authz_dir.joinpath('.boto')
     
     @classmethod
-    def should_write_boto(cls): 
-        return not bool(cls.boto_config and cls.boto_config.exists())
+    def should_write_boto(cls):
+        _authz = cls()
+        return not bool(_authz.boto_config and _authz.boto_config.exists())
 
     @classmethod
     def get_boto_values(cls):
+        _authz = cls()
         t = "[Credentials]\n"
-        if cls.aws_access_key_id:
-            t += f"aws_access_key_id = {cls.aws_access_key_id}\n"
-            t += f"aws_secret_access_key = {cls.aws_secret_access_key}\n"
-        if cls.gauth.to_env_path.exists():
-            t += f"gs_service_key_file = {cls.gauth}\n"
+        if _authz.aws_access_key_id:
+            t += f"aws_access_key_id = {_authz.aws_access_key_id}\n"
+            t += f"aws_secret_access_key = {_authz.aws_secret_access_key}\n"
+        if _authz.gauth.to_env_path.exists():
+            t += f"gs_service_key_file = {_authz.gauth}\n"
         t += "\n[Boto]\n"
         t += "https_validate_certificates = True\n"
         t += "\n[GSUtil]\n"
         t += "content_language = en\n"
         t += "default_api_version = 2\n"
-        if cls.gcloud_project or cls.google_cloud_project:
-            t += f"default_project_id = {cls.gcloud_project or cls.google_cloud_project}\n"
+        if _authz.gcloud_project or _authz.google_cloud_project:
+            t += f"default_project_id = {_authz.gcloud_project or _authz.google_cloud_project}\n"
         return t
 
     @classmethod
     def write_botofile(cls, overwrite: bool = False, **kwargs):
-        if cls.should_write_boto:
-            p = cls.get_boto_path()
+        _authz = cls()
+        if _authz.should_write_boto:
+            p = _authz.get_boto_path()
             if not p.exists() or overwrite:
                 logger.info(f'Writing Botofile to {p.as_posix()}')
-                p.write_text(cls.get_boto_values())
+                p.write_text(_authz.get_boto_values())
             else: 
                 logger.error(f'Botofile {p.as_posix()} exists and overwrite is False. Not overwriting')
             return p
         else: 
-            logger.warning(f'Skipping writing Botofile as BotoConfig = {cls.boto_config.as_posix()} exists')
+            logger.warning(f'Skipping writing Botofile as BotoConfig = {_authz.boto_config.as_posix()} exists')
             return cls.boto_config
 
 
