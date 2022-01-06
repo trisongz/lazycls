@@ -40,11 +40,11 @@ def autofuze_mount(source: str, mount_path: str, ready_file: bool = True, foregr
     return fuzecls
 
 
-def autofuze_unmount(source: str, mount_path: str, *args, **kwargs) -> FuzeTypes:
+def autofuze_unmount(source: str, mount_path: str, timeout: int = 5, force: bool = False, *args, **kwargs) -> FuzeTypes:
     uri_splits = source.split('://', maxsplit=1)
     if len(uri_splits) > 1:
         fuzecls = _URI_PREFIXES_TO_CLS[uri_splits[0] + '://']
     else:
         fuzecls = BaseFuzerCls
-    fuzecls.unmount(mount_path)
+    fuzecls.unmount(mount_path, timeout = timeout, force = force)
     return fuzecls
