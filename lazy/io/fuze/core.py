@@ -75,11 +75,17 @@ def _add_proc(path: str, proc: threading.Thread):
     global _ALL_FUZES
     _ALL_FUZES[path] = proc
 
-def _kill_proc(path: str, timeout: int = 5):
+def _kill_proc(path: str, timeout: int = 5, force: bool = False):
     global _ALL_FUZES
     if _ALL_FUZES.get(path):
         proc = _ALL_FUZES.pop(path)
         proc.unmount(timeout)
+    elif force:
+        logger.warning(f'Forcefully unmounting {path}')
+        umount = Lib.import_cmd('umount')
+        umount(path).val
+
+    
 
 def _kill_all(fuzername: str = None, timeout: int = 5):
     """
@@ -105,7 +111,7 @@ def get_cloudauthz():
         _authz = CloudAuthz
     return _authz
 
-def run_fuze(fs: FuseSystemType, mount_point: MountPoint, foreground: bool = True, threads=False, ready_file: bool = False, ops_class: 'FUSEr' = None):
+def run_fuze(fs: FuseSystemType, mount_point: MountPoint, foreground: bool = True, threads: bool = False, ready_file: bool = False, ops_class: 'FUSEr' = None):
     """Mount stuff in a local directory
     This uses fusepy to make it appear as if a given path on an fsspec
     instance is in fact resident within the local file-system.
@@ -213,11 +219,11 @@ class BaseFuzerCls:
         run_fuze(fs, mp, foreground=foreground, threads=threads, ready_file=ready_file)
     
     @classmethod
-    def unmount(cls, mount_path: str, timeout: int = 5) -> None:
+    def unmount(cls, mount_path: str, timeout: int = 5, force: bool = False) -> None:
         """ 
         Unmounts an existing mount at mount_path
         """
-        return _kill_proc(mount_path, timeout=timeout)
+        return _kill_proc(mount_path, timeout = timeout, force = force)
     
     @classmethod
     def unmount_all(cls, global_unmount: bool = False, timeout: int = 5) -> None:

@@ -35,6 +35,7 @@ class CloudAuthz(ConfigCls):
     
     gcloud_project: Optional[str] = ""
     google_cloud_project: Optional[str] = ""
+    gauth: GoogleAuthBGZ = "" # Kept for compatability
     gcp_auth: GoogleAuthBGZ = ""
     gcs_client_config: Optional[pyd.Json] = None
     gcs_config: Optional[pyd.Json] = None
