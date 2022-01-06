@@ -155,7 +155,7 @@ class LibType(type):
     
     def run_bash_script(cls, script_name: str, *args, **kwargs):
 
-        if not script_name.endswith('.sh'): script_name += script_name + '.sh'
+        if not script_name.endswith('.sh'): script_name += '.sh'
         scriptz = _bash_scriptz_path.joinpath(script_name)
         assert scriptz.exists(), f'Invalid Script: {script_name} does not exist.'
         cls.run_bash(cmd=scriptz.as_posix())
