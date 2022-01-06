@@ -136,17 +136,17 @@ class ConfigCls(BaseSettings, metaclass=ConfigClsMeta):
         self.reload(**kwargs)
         #return self.__new__(self.copy(update=dict(kwargs.items()), deep=True))
     
-    @property
-    def keys(self):
-        return self.dict().keys()
+    #@property
+    #def keys(self):
+    #    return self.dict().keys()
     
-    @property
-    def values(self):
-        return self.dict().values()
+    #@property
+    #def values(self):
+    #    return self.dict().values()
 
-    @property
-    def items(self):
-        return self.dict().items()
+    #@property
+    #def items(self):
+    #    return self.dict().items()
 
 
 
