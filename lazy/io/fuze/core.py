@@ -296,7 +296,7 @@ class BaseFuzerCls:
         return source
 
     @classmethod
-    def mount(cls, source: str, mount_path: str, ready_file: bool = True, foreground: bool = False, threads: bool = False, fs_args: Dict[str, Any] = {}, cleanup: bool = True, *args, **kwargs) -> None:
+    def mount(cls, source: str, mount_path: str, ready_file: bool = True, foreground: bool = False, threads: bool = False, use_mp: bool = False, daemon: bool = True, fs_args: Dict[str, Any] = {}, cleanup: bool = True, *args, **kwargs) -> None:
         """ 
         Mounts a source path/bucket/etc with this FuzeCls at mount_path
 
@@ -311,7 +311,7 @@ class BaseFuzerCls:
         logger.info(f'[{cls.__name__}] Starting Mount')
         fs = cls.get_filesystem(fs_args, *args, **kwargs)
         _mp = MountPoint(fuzer = cls.__name__, source=source, mount_point=mount_path, cleanup=cleanup)
-        _mp.mount(fs, foreground = foreground, threads = threads, ready_file = ready_file)
+        _mp.mount(fs, foreground = foreground, threads = threads, ready_file = ready_file, use_mp = use_mp, daemon = daemon)
         #run_fuze(fs, mp, foreground=foreground, threads=threads, ready_file=ready_file)
     
     @classmethod
