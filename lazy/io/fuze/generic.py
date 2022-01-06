@@ -1,9 +1,9 @@
-from typing import Dict, Any
+from typing import Dict, Any, Union, Type
 
 from .core import run_fuze, BaseFuzerCls, MountPoint
 from .cloud import GCSFuze, S3Fuze, MinioFuze, S3CompatFuze
 
-FuzeTypes = (BaseFuzerCls, GCSFuze, S3Fuze, MinioFuze, S3CompatFuze)
+FuzeTypes = Union[type(BaseFuzerCls), GCSFuze, S3Fuze, MinioFuze, S3CompatFuze]
 
 _URI_PREFIXES_TO_CLS: Dict[str, FuzeTypes] = {
     'gs://': GCSFuze,
