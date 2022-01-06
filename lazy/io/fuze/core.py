@@ -4,9 +4,11 @@
 Requires fusepy and fuse
 - does not support win
 """
+import os
 import sys
 import pathlib
 import threading
+import multiprocessing as mproc
 
 from importlib import import_module
 from fsspec import AbstractFileSystem
@@ -25,12 +27,15 @@ except ImportError: FUSEr = FUSE = object
 logger = get_logger('fuze')
 FuseSystemType = Union[Type[AbstractFileSystem], Type[AsyncFileSystem]]
 
+_lock: threading._RLock = threading._RLock()
+
 class MountPoint(BaseCls):
     fuzer: str # Name of the class
     source: str # User provided Mount Source
     mount_point: str # User provided mount point
     cleanup: bool = True # Cleanup dir after unmount
     thread: Optional[threading.Thread] = None
+    process: Optional[mproc.Process] = None
     alive: bool = True
 
     @property
@@ -49,16 +54,61 @@ class MountPoint(BaseCls):
 
     def kill(self, timeout: int = 5):
         if self.thread: self.thread.join(timeout=timeout)
+        elif self.process: self.process.join(timeout=timeout)
         self.alive = False
         self.thread = None
         logger.info(f'[{self.fuzer}] Completed Unmount: {self.source}')
     
-    def mount(self, fs: FuseSystemType, foreground: bool = True, threads: bool = False, ready_file: bool = False, ops_class: 'FUSEr' = None):
+    def _background(self, fs: FuseSystemType, foreground: bool = True, threads: bool = False, ready_file: bool = False):
+        self.alive = True
         from fsspec.fuse import FUSE as _FUSE
         from fsspec.fuse import FUSEr as _FUSEr
-        if not ops_class: ops_class = _FUSEr
-        self.target_path.mkdir(parents=True, exist_ok=True)
+        func = lambda: _FUSE(
+            _FUSEr(fs, self.source_path, ready_file=ready_file), 
+            self.target_path_str, 
+            nothreads=not threads, 
+            foreground=foreground)
+        
+        while self.alive:
+            try:
+                logger.info(f'Started Mount {self.source} -> {self.target_path_str} in Background')
+                func()
+            except KeyboardInterrupt:
+                logger.error('Got KeyboardInterrupt. Unmounting')
+                self.kill()
+                #_kill_proc(self.mount_point)
+                break
+            except Exception as e:
+                logger.error(f'Got Exception {e}. Unmounting')
+                self.kill()
+                #_kill_proc(self.mount_point)
+                break
 
+    
+    def mount(self, fs: FuseSystemType, foreground: bool = True, threads: bool = False, ready_file: bool = False, use_mp: bool = False, daemon: bool = True, ops_class: 'FUSEr' = None):
+        #from fsspec.fuse import FUSE as _FUSE
+        #from fsspec.fuse import FUSEr as _FUSEr
+        #if not ops_class: ops_class = _FUSEr
+        self.target_path.mkdir(parents=True, exist_ok=True)
+        if use_mp:
+            with _lock.acquire():
+                self.process = mproc.Process(target=self._background, args=(fs, foreground, threads, ready_file), daemon=daemon)
+                self.process.start()
+
+            #with threading.RLock() as _lock:
+            #    _lock.acquire()
+        elif not foreground:
+            with _lock.acquire():
+                self.thread = threading.Thread(target=self._background, args=(fs, foreground, threads, ready_file), daemon = daemon)
+                self.thread.start()
+        
+        else:
+            self._background(fs, foreground = foreground, threads = threads, ready_file = ready_file)
+        
+
+
+
+        """
         func = lambda: _FUSE(
             ops_class(fs, self.source_path, ready_file=ready_file), 
             self.target_path_str, 
@@ -79,6 +129,7 @@ class MountPoint(BaseCls):
             except KeyboardInterrupt:
                 _kill_proc(self.mount_point)
                 #sys.exit()
+        """
 
 
     def unmount(self, timeout: int = 5):
