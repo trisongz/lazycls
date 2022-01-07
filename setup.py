@@ -17,7 +17,7 @@ requirements = [
     'dill',
     'fsspec',
     'orjson',
-    'pickletools',
+    #'pickletools',
     'pydantic[dotenv]',
     'pylogz',
     'pysimdjson',
