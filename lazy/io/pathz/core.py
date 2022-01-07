@@ -58,9 +58,9 @@ class _IOPath(pathlib.PurePath, base.ReadWritePath):
         if cls._SYNC_FS: return cls._SYNC_FS
         authz = cls.get_configz(*args, **kwargs)
         if is_async:
-            cls._ASYNC_FS = getattr(cls._FSX, cls._FSX_MODULE)(asynchronous = True, **authz)
+            cls._ASYNC_FS = getattr(cls._FSX, cls._FSX_CLS)(asynchronous = True, **authz)
             return cls._ASYNC_FS
-        cls._SYNC_FS = getattr(cls._FSX, cls._FSX_MODULE)(**authz)
+        cls._SYNC_FS = getattr(cls._FSX, cls._FSX_CLS)(**authz)
         return cls._SYNC_FS
     
     @classmethod

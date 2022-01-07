@@ -103,12 +103,12 @@ def resolve_relative(filepath: Union[str, PathLike]) -> str:
     elif filepath.startswith('.'): filepath = filepath.replace('.', pathlib.Path(get_cwd()).parent.as_posix() + '/', 1)
     return filepath
 
-def get_path(filepath: Union[str, PathLike], resolve: bool = True) -> _PATHLIKE_CLS:
+def get_path(filepath: Union[str, PathLike], resolve: bool = False) -> _PATHLIKE_CLS:
     if resolve: filepath = resolve_relative(filepath)
     if isinstance(filepath, str): filepath = as_path(filepath)
     return filepath
 
-def get_pathlike(filepath: Union[str, PathLike], resolve: bool = True) -> _PATHLIKE_CLS:
+def get_pathlike(filepath: Union[str, PathLike], resolve: bool = False) -> _PATHLIKE_CLS:
     if resolve: filepath = resolve_relative(filepath)
     if isinstance(filepath, str): filepath = as_path(filepath)
     return filepath
