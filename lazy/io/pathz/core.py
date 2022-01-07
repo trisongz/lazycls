@@ -1105,37 +1105,37 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         """
         Returns True if self exists.
         """
-        return await self.async_fs.exists(self._cpath_str)
+        return await self.async_fs._exists(self._cpath_str)
 
     async def async_is_dir(self) -> bool:
         """
         Returns True if self is a directory.
         """
-        return await self.async_fs.isdir(self._cpath_str)
+        return await self.async_fs._isdir(self._cpath_str)
 
     async def async_is_file(self) -> bool:
         """Returns True if self is a file."""
-        return await self.async_fs.isfile(self._cpath_str)
+        return await self.async_fs._isfile(self._cpath_str)
 
 
     async def async_cat(self, recursive: bool = False, on_error: Optional[str] = None, **kwargs):
         """
         Fetch (potentially multiple) paths contents
         """
-        return await self.async_fs.cat(self._cpath_str, recursive, on_error, **kwargs)
+        return await self.async_fs._cat(self._cpath_str, recursive, on_error, **kwargs)
     
     async def async_cat_file(self, start: Optional[int] = None, end: Optional[int] = None, **kwargs):
         """
         Get the content of a file
         """
-        return await self.async_fs.cat_file(self._cpath_str, start=start, end=end, **kwargs)
+        return await self.async_fs._cat_file(self._cpath_str, start=start, end=end, **kwargs)
 
     async def async_copy(self, dest: base.PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False) -> _P:
         """
         Copies the File to the Dir/File.
         """
         _dest = self._get_dest(dest, recursive, overwrite, skip_errors)
-        await self.async_fs.copy(self._cpath_str, _dest._cpath_str, recursive = recursive)
+        await self.async_fs._copy(self._cpath_str, _dest._cpath_str, recursive = recursive)
         return _dest
 
     
@@ -1144,20 +1144,20 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         Copy file(s) to local.
         """
         _dest = self._get_dest(dest, recursive, overwrite, skip_errors)
-        await self.async_fs.download(self._cpath_str, _dest._cpath_str, recursive = recursive, callback = callback)
+        await self.async_fs._download(self._cpath_str, _dest._cpath_str, recursive = recursive, callback = callback)
         return _dest
     
     async def async_du(self, total: Optional[int] = None, maxdepth: Optional[int] = None, **kwargs):
         """
         Fetch (potentially multiple) paths contents
         """
-        return await self.async_fs.du(self._cpath_str, total, maxdepth, **kwargs)
+        return await self.async_fs._du(self._cpath_str, total, maxdepth, **kwargs)
     
     async def async_expand_path(self, recursive: bool = False, maxdepth: Optional[int] = None):
         """
         Turn one or more globs or directories into a list of all matching paths to files or directories.
         """
-        paths = await self.async_fs.expand_path(recursive = recursive, maxdepth = maxdepth)
+        paths = await self.async_fs._expand_path(recursive = recursive, maxdepth = maxdepth)
         return [self._new(p) for p in paths]
     
     async def async_find(self, path: Optional[str] = None, maxdepth: Optional[int] = None, withdirs: bool = False, detail: bool = False, prefix: Optional[str] = None, **kwargs):
@@ -1165,20 +1165,20 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         List all files below path.
         """
         p = self if not path else self.joinpath(path)
-        return await self.async_fs.find(p, maxdepth=maxdepth, withdirs=withdirs, detail=detail, prefix=prefix, **kwargs)
+        return await self.async_fs._find(p, maxdepth=maxdepth, withdirs=withdirs, detail=detail, prefix=prefix, **kwargs)
     
     async def async_get_checksum(self, refresh: bool = False, **kwargs):
         """
         Unique value for current version of file
         """
-        return await self.async_fs.checksum(self._cpath_str, refresh=refresh, **kwargs)
+        return await self.async_fs._checksum(self._cpath_str, refresh=refresh, **kwargs)
     
     async def async_get_file(self, dest: base.PathLike, callback: Optional[Callable] = None, overwrite: bool = False, skip_errors: bool = False, **kwargs):
         """
         Copy single remote file to local
         """
         _dest = self._get_dest(dest, overwrite=overwrite, skip_errors=skip_errors)
-        return await self.async_fs.get_file(self._cpath_str, _dest._cpath_str, callback=callback, **kwargs)
+        return await self.async_fs._get_file(self._cpath_str, _dest._cpath_str, callback=callback, **kwargs)
 
 
     async def async_get_files(self, dest: base.PathLike, recursive: bool = False, callback: Optional[Callable] = None, overwrite: bool = False, skip_errors: bool = False, **kwargs):
@@ -1186,7 +1186,7 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         Copy file(s) to local.
         """
         _dest = self._get_dest(dest, recursive=recursive, overwrite=overwrite, skip_errors=skip_errors)
-        return await self.async_fs.get(self._cpath_str, _dest._cpath_str, recursive=recursive, callback=callback, **kwargs)
+        return await self.async_fs._get(self._cpath_str, _dest._cpath_str, recursive=recursive, callback=callback, **kwargs)
         
 
     async def async_glob(self, pattern: str, **kwargs) -> Iterator[_P]:
@@ -1194,7 +1194,7 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         Yielding all matching files (of any kind).
         """
         uri_scheme = self._uri_scheme
-        for f in await self.async_fs.glob(self._PATH.join(self._path_str, pattern)._cpath_str,  **kwargs):
+        for f in await self.async_fs._glob(self._PATH.join(self._path_str, pattern)._cpath_str,  **kwargs):
             if self.is_cloud: yield self._new(f'{uri_scheme}://' + f)
             else: yield self._new(f)
 
@@ -1202,14 +1202,14 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         """ 
         Get the first size bytes from file
         """
-        return await self.async_fs.head(self._cpath_str, size)
+        return await self.async_fs._head(self._cpath_str, size)
 
     async def async_iterdir(self, **kwargs) -> Iterator[_P]:
         """
         Iterates over the directory.
         """
         uri_scheme = self._uri_scheme
-        for f in await self.async_fs.glob(self._cpath_str, **kwargs):
+        for f in await self.async_fs._glob(self._cpath_str, **kwargs):
             if self.is_cloud: yield self._new(f'{uri_scheme}://' + f)
             else: yield self._new(f)
 
@@ -1217,13 +1217,13 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         """
         Return the last modified timestamp of file at path as a datetime
         """
-        return await self.async_fs.modified(self._cpath_str, version_id=version_id, refresh=refresh, **kwargs)
+        return await self.async_fs._modified(self._cpath_str, version_id=version_id, refresh=refresh, **kwargs)
 
     async def async_ls(self, detail: bool = False, **kwargs):
         """
         List objects at path.
         """
-        return await self.async_fs.ls(self._cpath_str, detail=detail, **kwargs)
+        return await self.async_fs._ls(self._cpath_str, detail=detail, **kwargs)
 
     
     async def async_mkdir(self, mode: int = 0o777, parents: bool = False, exist_ok: bool = False) -> None:
@@ -1231,14 +1231,14 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         Create a new directory at this given path.
         """
         if self.exists() and exist_ok: return
-        return await self.async_fs.mkdir(self._cpath_str, mode=mode, create_parents=parents, exist_ok=exist_ok)
+        return await self.async_fs._mkdir(self._cpath_str, mode=mode, create_parents=parents, exist_ok=exist_ok)
 
     async def async_move(self, dest: base.PathLike, recursive: bool = False, maxdepth: Optional[int] = None, overwrite: bool = False, skip_errors: bool = False, **kwargs):
         """
         Move file(s) from one location to another
         """
         _dest = self._get_dest(dest, recursive=recursive, overwrite=overwrite, skip_errors=skip_errors)
-        await self.async_fs.move(self._cpath_str, _dest._cpath_str, recursive = recursive, maxdepth=maxdepth)
+        await self.async_fs._move(self._cpath_str, _dest._cpath_str, recursive = recursive, maxdepth=maxdepth)
         return _dest
 
     
@@ -1247,12 +1247,12 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         Move file(s) from one location to another
         """
         _dest = self._get_dest(dest, recursive=recursive, overwrite=overwrite, skip_errors=skip_errors)
-        await self.async_fs.move(self._cpath_str, _dest._cpath_str, recursive = recursive, maxdepth=maxdepth)
+        await self.async_fs._move(self._cpath_str, _dest._cpath_str, recursive = recursive, maxdepth=maxdepth)
         return _dest
 
     async def async_open(self, mode: str = 'r', encoding: Optional[str] = base.DEFAULT_ENCODING, errors: Optional[str] = None, block_size: int = 5242880, compression: str = 'infer', **kwargs: Any) -> typing.IO[Union[str, bytes]]:
         """Opens the file."""
-        filelike = await self.async_fs.open(self._cpath_str, mode=mode, encoding=encoding, errors=errors, block_size=block_size, compression=compression, **kwargs)
+        filelike = await self.async_fs._open(self._cpath_str, mode=mode, encoding=encoding, errors=errors, block_size=block_size, compression=compression, **kwargs)
         filelike = typing.cast(typing.IO[Union[str, bytes]], filelike)
         return filelike
 
@@ -1261,7 +1261,7 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         Copy file from local.
         """
         _dest = self._get_dest(dest, overwrite=overwrite, skip_errors=skip_errors)
-        await self.async_fs.put_file(self._cpath_str, _dest._cpath_str, callback = callback, **kwargs)
+        await self.async_fs._put_file(self._cpath_str, _dest._cpath_str, callback = callback, **kwargs)
         return _dest
     
     async def async_put_files(self, dest: base.PathLike, recursive: bool = False, callback: Optional[Callable] = None, overwrite: bool = False, skip_errors: bool = False, **kwargs):
@@ -1269,21 +1269,21 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         Copy file(s) from local.
         """
         _dest = self._get_dest(dest, recursive=recursive, overwrite=overwrite, skip_errors=skip_errors)
-        await self.async_fs.put(self._cpath_str, _dest._cpath_str, recursive=recursive, callback = callback, **kwargs)
+        await self.async_fs._put(self._cpath_str, _dest._cpath_str, recursive=recursive, callback = callback, **kwargs)
         return _dest
 
     async def async_remove(self, recursive: bool = False, maxdepth: Optional[int] = None, **kwargs):
         """
         Delete files.
         """
-        return await self.async_fs.rm(self._cpath_str, recursive=recursive, maxdepth = maxdepth, **kwargs)
+        return await self.async_fs._rm(self._cpath_str, recursive=recursive, maxdepth = maxdepth, **kwargs)
 
     async def async_rename(self, dest: base.PathLike, recursive: bool = False, maxdepth: Optional[int] = None, overwrite: bool = False, skip_errors: bool = False, **kwargs):
         """
         Rename file or directory to the given target.
         """
         _dest = self._get_dest(dest, recursive=recursive, overwrite=overwrite, skip_errors=skip_errors)
-        await self.async_fs.rename(self._cpath_str, _dest._cpath_str, recursive=recursive, maxdepth = maxdepth, **kwargs)
+        await self.async_fs._rename(self._cpath_str, _dest._cpath_str, recursive=recursive, maxdepth = maxdepth, **kwargs)
         return _dest
 
     async def async_replace(self, target: base.PathLike) -> _P:
@@ -1291,13 +1291,13 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         Replace file or directory to the given target.
         """
         _dest = self._get_dest(target, overwrite=True)
-        await self.async_fs.rename(self._cpath_str, _dest._cpath_str)
+        await self.async_fs._rename(self._cpath_str, _dest._cpath_str)
 
     async def async_rm(self, recursive: bool = False, maxdepth: Optional[int] = None, **kwargs):
         """
         Delete files.
         """
-        await self.async_fs.rm(self._cpath_str, recursive, maxdepth, **kwargs)
+        await self.async_fs._rm(self._cpath_str, recursive, maxdepth, **kwargs)
     
     async def async_rm_file(self, missing_ok: bool = True, **kwargs):
         """
@@ -1306,7 +1306,7 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         if not self.exists():
             if missing_ok: return
             raise ValueError(f"{self._path_str} does not exist")
-        await self.async_fs.rm_file(self._cpath_str, **kwargs)
+        await self.async_fs._rm_file(self._cpath_str, **kwargs)
 
     async def async_rmdir(self, force: bool = False, recursive: bool = True, skip_errors: bool = True) -> None:
         """
@@ -1314,60 +1314,60 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         If force, will recursively remove even if not empty.
         """
         try:
-            return await self.async_fs.rmdir(self._cpath_str)
+            return await self.async_fs._rmdir(self._cpath_str)
         except Exception as e:
-            if force: return await self.async_fs.rm(self._cpath_str, recursive = recursive)
+            if force: return await self.async_fs._rm(self._cpath_str, recursive = recursive)
             if skip_errors: return
             raise e
 
     async def async_rmtree(self, recursive: bool = True, maxdepth: Optional[int] = None) -> None:
         """Remove the directory."""
-        return await self.async_fs.rm(self._cpath_str, recursive, maxdepth)
+        return await self.async_fs._rm(self._cpath_str, recursive, maxdepth)
     
     async def async_sign(self, expiration: int = 100, **kwargs):
         """
         Create a signed URL representing the given path
         Some implementations allow temporary URLs to be generated, as a way of delegating credentials
         """
-        return await self.async_fs.sign(self._cpath_str, expiration, **kwargs)
+        return await self.async_fs._sign(self._cpath_str, expiration, **kwargs)
     
     async def async_split_path(self, **kwargs) -> List[str]:
         """
         Normalise path string into bucket and key
         """
-        return await self.async_fs.split_path(self._cpath_str, **kwargs)
+        return await self.async_fs._split_path(self._cpath_str, **kwargs)
     
     async def async_tail(self, size: Optional[int] = None):
         """ 
         Get the last size bytes from file
         """
-        return await self.async_fs.tail(self._cpath_str, size)
+        return await self.async_fs._tail(self._cpath_str, size)
 
     async def async_touch(self, truncate: bool = True, data = None, **kwargs):
         """
         Create empty file or truncate
         """
-        return await self.async_fs.touch(self._cpath_str, truncate = truncate, data = data, **kwargs)
+        return await self.async_fs._touch(self._cpath_str, truncate = truncate, data = data, **kwargs)
     
     async def async_unlink(self, missing_ok: bool = True, **kwargs) -> None:
         """
         Remove this file or symbolic link.
         """
-        if getattr(self.async_fs, 'unlink', None): return await self.async_fs.unlink(self._cpath_str, missing_ok = missing_ok, **kwargs)
+        if getattr(self.async_fs, 'unlink', None): return await self.async_fs._unlink(self._cpath_str, missing_ok = missing_ok, **kwargs)
         return await self.async_rm_file(missing_ok, **kwargs)
     
     async def async_url(self, expires: int = 3600, client_method: str = 'get_object', **kwargs):
         """
         Generate presigned URL to access path by HTTP
         """
-        return await self.async_fs.url(self._cpath_str, expires, client_method, **kwargs)
+        return await self.async_fs._url(self._cpath_str, expires, client_method, **kwargs)
 
     async def async_upload(self, dest: base.PathLike, recursive: bool = False, callback: Optional[Callable] = None, overwrite: bool = False, skip_errors: bool = False, **kwargs):
         """
         Copy file(s) from local.
         """
         _dest = self._get_dest(dest, recursive=recursive, overwrite=overwrite, skip_errors=skip_errors)
-        return await self.async_fs.url(self._cpath_str, _dest._cpath_str, recursive=recursive, callback=callback, **kwargs)
+        return await self.async_fs._url(self._cpath_str, _dest._cpath_str, recursive=recursive, callback=callback, **kwargs)
 
 
 class WindowsFSxPath(PosixFSxPath, pathlib.PureWindowsPath):
