@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#SCRIPTS_DIR=$(dirname "$(realpath $0)")
-#BASE_FUNCS=${FUSE_FUNCS:-"$SCRIPTS_DIR/base_funcs.sh"}
-#source "$BASE_FUNCS"
-
 ################################################################
 #####           Installers for FUSE                      #######
 ################################################################
