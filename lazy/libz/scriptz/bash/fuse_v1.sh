@@ -5,7 +5,7 @@
 ################################################################
 
 fuse_install_prereqs() {
-    if [[ "$(which fuse)" == "" ]]; then
+    if [[ "$(which fusermount)" == "" ]]; then
         apt update -qq && apt install -y -qq curl fuse
     fi
 }
