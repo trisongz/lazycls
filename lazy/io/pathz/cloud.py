@@ -38,6 +38,7 @@ class PosixS3Path(PosixFSxPath, pathlib.PurePosixPath):
     _ASYNC_FS: 's3fs.S3FileSystem' = None
     _FSX_LIB: str = 's3fs'
     _FSX_CLS: str = 'S3FileSystem'
+    _FSX_MODULE = None
     _AUTHZ: 'CloudAuthz' = None
 
     @property
@@ -80,6 +81,7 @@ class PosixGCSPath(PosixFSxPath, pathlib.PurePosixPath):
     _ASYNC_FS: 'gcsfs.GCSFileSystem' = None
     _FSX_LIB: str = 'gcsfs'
     _FSX_CLS: str = 'GCSFileSystem'
+    _FSX_MODULE = None
     _AUTHZ: 'CloudAuthz' = None
 
     @classmethod
@@ -120,6 +122,7 @@ class PosixMinioPath(PosixS3Path, pathlib.PurePosixPath):
     _ASYNC_FS: 's3fs.S3FileSystem' = None
     _FSX_LIB: str = 's3fs'
     _FSX_CLS: str = 'S3FileSystem'
+    _FSX_MODULE = None
     _AUTHZ: 'CloudAuthz' = None
 
     @classmethod
@@ -145,6 +148,7 @@ class PosixS3CompatPath(PosixS3Path, pathlib.PurePosixPath):
     _ASYNC_FS: 's3fs.S3FileSystem' = None
     _FSX_LIB: str = 's3fs'
     _FSX_CLS: str = 'S3FileSystem'
+    _FSX_MODULE = None
     _AUTHZ: 'CloudAuthz' = None
 
     @classmethod
