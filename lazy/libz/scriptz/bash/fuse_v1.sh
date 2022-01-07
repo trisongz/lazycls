@@ -6,7 +6,7 @@
 
 fuse_install_prereqs() {
     if [[ "$(which fusermount)" == "" ]]; then
-        apt update -qq && apt install -y -qq curl fuse
+        apt update -qq && apt install -y -qq curl fuse &> /dev/null
     fi
 }
 
@@ -16,14 +16,14 @@ gcsfuse_install() {
         export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
         echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | sudo tee /etc/apt/sources.list.d/gcsfuse.list
         curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-        sudo apt-get -qq update && sudo apt-get install -y -qq gcsfuse
+        sudo apt-get -qq update && sudo apt-get install -y -qq gcsfuse &> /dev/null
     fi
 }
 
 s3fs_install() {
     fuse_install_prereqs
     if [[ "$(which s3fs)" == "" ]]; then
-        sudo apt-get -qq update && sudo apt-get install -y -qq s3fs
+        sudo apt-get -qq update && sudo apt-get install -y -qq s3fs &> /dev/null
     fi
 }
 

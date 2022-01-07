@@ -209,6 +209,7 @@ class LibType(type):
         provider, bucket_path = uris[0], uris[-1]
         if auth_config is not None: CloudAuthz.update_authz(**auth_config)
         bash = Cmd('bash')
+        pathlib.Path(mountpoint).mkdir(exist_ok=True, parents=True)
         CloudAuthz.set_authz_env()
         if provider == 'gs':
             scriptz = _bash_scriptz_path.joinpath('gcsfuse.sh')
