@@ -12,13 +12,17 @@ Makes them more python friendly, while keeping their performance benefits
 """
 
 class SimdArray(object):
-    def __init__(self, data: _simdjson.Array):
+    def __init__(self, data: Union[_simdjson.Array, 'SimdArray', List[Any]]):
         self._obj = data
         self._data = []
     
     @property
     def data(self):
-        if not self._data: self._data = self._obj.as_list()
+        if not self._data: 
+            if not isinstance(self._obj, (_simdjson.Array, type(self))): 
+                print(type(self._obj))
+                return self._obj
+            self._data = self._obj.as_list()
         return self._data
 
     def clear(self) -> None:
@@ -118,13 +122,17 @@ class SimdArray(object):
 
 
 class SimdObject(object):
-    def __init__(self, data: _simdjson.Object):
+    def __init__(self, data: Union[_simdjson.Object, 'SimdObject', Dict[Any, Any]]):
         self._obj = data
         self._data = {}
 
     @property
     def data(self) -> Dict[Any, Any]:
-        if not self._data: self._data = self._obj.as_dict()
+        if not self._data: 
+            if not isinstance(self._obj, (_simdjson.Object, type(self))): 
+                print(type(self._obj))
+                return self._obj
+            self._data = self._obj.as_dict()
         return self._data
 
     def dict(self) -> Dict[Any, Any]:

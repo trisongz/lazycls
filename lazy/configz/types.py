@@ -191,7 +191,10 @@ class PathStr(EnvType):
         # Fix Home
         if '~' in v: v = v.replace('~', os.path.expanduser('~'))
         ## will import dynamically later.
-        return _get_pathio(v).resolve()
+        p = _get_pathio(v)
+        p.resolve()
+        p.mkdir(exist_ok=True, parents=True)
+        return p
     
     @classmethod
     def validate(cls, v):

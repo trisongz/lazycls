@@ -227,7 +227,8 @@ class FastAPIBaseConfigCls(ConfigCls):
 
 
 
-
+class FuzeConfigz(ConfigCls):
+    cache_dir: PathStr = '~/.cachez'
 
     
 

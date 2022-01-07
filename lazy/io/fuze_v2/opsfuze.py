@@ -1,19 +1,12 @@
-#from fuse import FUSE
-import logging
 import os
 import stat
-import threading
-import fuse
 import errno
 import time
-from os import fsencode, fsdecode
+from .ops import Operations, AsyncOperations, FuseOSError, logger
 
-from lazy.utils import get_logger
 
-logger = get_logger('FuzeOps')
-
-class FUSEr(fuse.Operations):
-    def __init__(self, fs, path, ready_file=False):
+class FUSEr(Operations):
+    def __init__(self, fs, path, ready_file=False, **kwargs):
         self.fs = fs
         self.cache = {}
         self.root = path.rstrip("/") + "/"
@@ -26,7 +19,7 @@ class FUSEr(fuse.Operations):
         if self._ready_file and path in ["/.fuse_ready", ".fuse_ready", "/.fuze_mounted", ".fuze_mounted"]: return {"type": "file", "st_size": 5}
         path = "".join([self.root, path.lstrip("/")]).rstrip("/")
         try: info = self.fs.info(path)
-        except FileNotFoundError: raise fuse.FuseOSError(errno.ENOENT)
+        except FileNotFoundError: raise FuseOSError(errno.ENOENT)
         data = {"st_uid": info.get("uid", 1000), "st_gid": info.get("gid", 1000)}
         perm = info.get("mode", 0o777)
 
@@ -101,7 +94,7 @@ class FUSEr(fuse.Operations):
     def unlink(self, path):
         fn = "".join([self.root, path.lstrip("/")])
         try: self.fs.rm(fn, False)
-        except (IOError, FileNotFoundError): raise fuse.FuseOSError(errno.EIO)
+        except (IOError, FileNotFoundError): raise FuseOSError(errno.EIO)
 
     def release(self, path, fh):
         try:
@@ -119,9 +112,23 @@ class FUSEr(fuse.Operations):
             return self.fs.chmod(path, mode)
         raise NotImplementedError
 
+class FUSErCache(FUSEr):
+    """
+    Uses lazy.io.cachez
+    """
+    def __init__(self, fs, path, cache_dir: str, ready_file: bool = False):
+        from lazy.io.cachez import Cache
+        self.fs = fs
+        self.cache = Cache(directory=cache_dir)
+        self.root = path.rstrip("/") + "/"
+        self.counter = 0
+        logger.info("Starting FUSECache at %s", path)
+        self._ready_file = ready_file
 
-class AsyncFUSEr(fuse.Operations):
-    def __init__(self, fs, path, ready_file=False):
+
+
+class AsyncFUSEr(AsyncOperations):
+    def __init__(self, fs, path, ready_file=False, **kwargs):
         self.fs = fs
         self.cache = {}
         self.root = path.rstrip("/") + "/"
@@ -133,8 +140,8 @@ class AsyncFUSEr(fuse.Operations):
         logger.debug("getattr %s", path)
         if self._ready_file and path in ["/.fuse_ready", ".fuse_ready", "/.fuze_mounted", ".fuze_mounted"]: return {"type": "file", "st_size": 5}
         path = "".join([self.root, path.lstrip("/")]).rstrip("/")
-        try: info = await self.fs.info(path)
-        except FileNotFoundError: raise fuse.FuseOSError(errno.ENOENT)
+        try: info = await self.fs._info(path)
+        except FileNotFoundError: raise FuseOSError(errno.ENOENT)
         data = {"st_uid": info.get("uid", 1000), "st_gid": info.get("gid", 1000)}
         perm = info.get("mode", 0o777)
 
@@ -155,38 +162,38 @@ class AsyncFUSEr(fuse.Operations):
     async def readdir(self, path, fh):
         logger.debug("readdir %s", path)
         path = "".join([self.root, path.lstrip("/")])
-        files = await self.fs.ls(path, False)
+        files = await self.fs._ls(path, False)
         files = [os.path.basename(f.rstrip("/")) for f in files]
         return [".", ".."] + files
 
     async def mkdir(self, path, mode):
         path = "".join([self.root, path.lstrip("/")])
-        await self.fs.mkdir(path)
+        await self.fs._mkdir(path)
         return 0
 
     async def rmdir(self, path):
         path = "".join([self.root, path.lstrip("/")])
-        await self.fs.rmdir(path)
+        await self.fs._rmdir(path)
         return 0
 
     async def read(self, path, size, offset, fh):
         logger.debug("read %s", (path, size, offset))
         if self._ready_file and path in ["/.fuse_ready", ".fuse_ready", "/.fuze_mounted", ".fuze_mounted"]: return b"ready"
         f = self.cache[fh]
-        await f.seek(offset)
-        return await f.read(size)
+        f.seek(offset)
+        return f.read(size)
 
     async def write(self, path, data, offset, fh):
         logger.debug("write %s", (path, offset))
         f = self.cache[fh]
-        await f.write(data)
+        f.write(data)
         return len(data)
 
     async def create(self, path, flags, fi=None):
         logger.debug("create %s", (path, flags))
         fn = "".join([self.root, path.lstrip("/")])
-        await self.fs.touch(fn)  # OS will want to get attributes immediately
-        f = await self.fs.open(fn, "wb")
+        self.fs.touch(fn)  # OS will want to get attributes immediately
+        f = self.fs.open(fn, "wb")
         self.cache[self.counter] = f
         self.counter += 1
         return self.counter - 1
@@ -196,7 +203,7 @@ class AsyncFUSEr(fuse.Operations):
         fn = "".join([self.root, path.lstrip("/")])
         if flags % 2 == 0: mode = "rb"
         else: mode = "wb"
-        self.cache[self.counter] = await self.fs.open(fn, mode)
+        self.cache[self.counter] = self.fs.open(fn, mode)
         self.counter += 1
         return self.counter - 1
 
@@ -208,14 +215,14 @@ class AsyncFUSEr(fuse.Operations):
 
     async def unlink(self, path):
         fn = "".join([self.root, path.lstrip("/")])
-        try: self.fs.rm(fn, False)
-        except (IOError, FileNotFoundError): raise fuse.FuseOSError(errno.EIO)
+        try: await self.fs._rm(fn, False)
+        except (IOError, FileNotFoundError): raise FuseOSError(errno.EIO)
 
     async def release(self, path, fh):
         try:
             if fh in self.cache:
                 f = self.cache[fh]
-                await f.close()
+                f.close()
                 self.cache.pop(fh)
         except Exception as e:
             print(e)
@@ -224,5 +231,19 @@ class AsyncFUSEr(fuse.Operations):
     async def chmod(self, path, mode):
         if hasattr(self.fs, "chmod"):
             path = "".join([self.root, path.lstrip("/")])
-            return await self.fs.chmod(path, mode)
+            return await self.fs._chmod(path, mode)
         raise NotImplementedError
+
+
+class AsyncFUSErCache(AsyncFUSEr):
+    """
+    Uses lazy.io.cachez
+    """
+    def __init__(self, fs, path, cache_dir: str, ready_file: bool = False):
+        from lazy.io.cachez import Cache
+        self.fs = fs
+        self.cache = Cache(directory=cache_dir)
+        self.root = path.rstrip("/") + "/"
+        self.counter = 0
+        logger.info("Starting AsyncFUSECache at %s", path)
+        self._ready_file = ready_file

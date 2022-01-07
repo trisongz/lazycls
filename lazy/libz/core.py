@@ -7,7 +7,9 @@ import importlib
 import subprocess
 import pkg_resources
 import pathlib
-from typing import List
+
+from typing import List, Type, Any, Union, Dict
+from types import ModuleType
 
 _root_path = pathlib.Path(__file__).parent
 _scriptz_path = _root_path.joinpath('scriptz')
@@ -92,10 +94,15 @@ class LibType(type):
     def _ensure_binary_installed(cls, binary: str, flags: List[str] = None):
         return cls.install_binary(binary, flags)
     
-    def import_lib(cls, library: str, pip_name: str = None, resolve_missing: bool = True, require: bool = False, upgrade: bool = False):
+    def import_lib(cls, library: str, pip_name: str = None, resolve_missing: bool = True, require: bool = False, upgrade: bool = False) -> ModuleType:
         """ Lazily resolves libs.
 
             if pip_name is provided, will install using pip_name, otherwise will use libraryname
+
+            ie ->   Lib.import_lib('fuse', 'fusepy') # if fusepy is not expected to be available, and fusepy is the pip_name
+                    Lib.import_lib('fuse') # if fusepy is expected to be available
+            
+            returns `fuse` as if you ran `import fuse`
         
             if available, returns the sys.modules[library]
             if missing and resolve_missing = True, will lazily install
@@ -109,6 +116,31 @@ class LibType(type):
             if not resolve_missing: return None
             cls.install_library(pip_name or library, upgrade=upgrade)
         return cls._ensure_lib_imported(library)
+    
+    def import_module(cls, name: str, library: str = None, pip_name: str = None, resolve_missing: bool = True, require: bool = False, upgrade: bool = False) -> ModuleType:
+        """ Lazily resolves libs and imports the name, aliasing
+            immportlib.import_module
+
+            ie ->   Lib.import_module('tensorflow.io.gfile', 'tensorflow') # if tensorflow is not expected to be available
+                    Lib.import_module('tensorflow.io.gfile') # if tensorflow is expected to be available
+            returns tensorflow.io.gfile
+        """
+        if library:
+            cls.import_lib(library, pip_name, resolve_missing, require, upgrade)
+            return importlib.import_module(name, package=library)
+        return importlib.import_module(name)
+
+    def import_module_attr(cls, name: str, module_name: str, library: str = None, pip_name: str = None, resolve_missing: bool = True, require: bool = False, upgrade: bool = False) -> Any:
+        """ Lazily resolves libs and imports the name, aliasing
+            immportlib.import_module
+            Returns an attribute from the module
+
+            ie ->   Lib.import_module_attr('GFile', 'tensorflow.io.gfile', 'tensorflow') # if tensorflow is not expected to be available
+                    Lib.import_module_attr('GFile', 'tensorflow.io.gfile') # if tensorflow is expected to be available
+            returns GFile
+        """
+        mod = cls.import_module(name=module_name, library=library, pip_name=pip_name, resolve_missing = resolve_missing, require = require, upgrade = upgrade)
+        return getattr(mod, name)
     
     def import_cmd(cls, binary: str, resolve_missing: bool = True, require: bool = False, flags: List[str] = None):
         """ Lazily builds a lazy.Cmd based on binary
@@ -125,7 +157,7 @@ class LibType(type):
             cls.install_binary(binary, flags=flags)
         from lazy.cmd import Cmd
         return Cmd(binary=binary)
-    
+
     def get_binary_path(cls, executable: str):
         """
         Searches for a binary named `executable` in the current PATH. If an executable is found, its absolute path is returned
@@ -154,11 +186,40 @@ class LibType(type):
         return bash(cmd, *args, **kwargs).val
     
     def run_bash_script(cls, script_name: str, *args, **kwargs):
-
         if not script_name.endswith('.sh'): script_name += '.sh'
         scriptz = _bash_scriptz_path.joinpath(script_name)
         assert scriptz.exists(), f'Invalid Script: {script_name} does not exist.'
         cls.run_bash(cmd=scriptz.as_posix())
+    
+    def run_fusemount(cls, bucket: str, mountpoint: str, auth_config: Dict[Any, Any] = None, *cliargs, **kwargs):
+        """
+        Runs fuse_v1
+        Base Args:
+        BUCKET=$1
+        MOUNT_PATH=$2
+
+        For S3:
+        S3_TYPE=$3
+        """
+
+        from lazy.configz import CloudAuthz
+        from lazy.cmd import Cmd
+
+        uris = bucket.split('://', maxsplit=1)
+        provider, bucket_path = uris[0], uris[-1]
+        if auth_config is not None: CloudAuthz.update_authz(**auth_config)
+        bash = Cmd('bash')
+        CloudAuthz.set_authz_env()
+        if provider == 'gs':
+            scriptz = _bash_scriptz_path.joinpath('gcsfuse.sh')
+            return bash(scriptz.as_posix(), bucket_path, mountpoint, *cliargs, **kwargs).val
+        
+        scriptz = _bash_scriptz_path.joinpath('s3fuse.sh')
+        if provider == 's3': return bash(scriptz.as_posix(), bucket_path, mountpoint, 'aws', *cliargs, **kwargs).val
+        return bash(scriptz.as_posix(), bucket_path, mountpoint, provider, *cliargs, **kwargs).val
+
+
+
 
 
     def __getattr__(cls, key):
@@ -197,7 +258,91 @@ class LibType(type):
         
         return cls.import_lib(key, resolve_missing=False, require=False)
     
+    def get(cls, name: str, attr_name: str = None, pip_name: str = None, resolve_missing: bool = True) -> Union[ModuleType, Any]:
+        """
+        Resolves the import based on params.
+
+        Importing a module:
+        Lib.get('tensorflow') -> tensorflow Module
+        Lib.get('fuse', pip_name='fusepy') -> fuse Module
+        
+        Importing a submodule:
+        Lib.get('tensorflow.io') -> io submodule
+
+        Importing something from within a submodule:
+        Lib.get('tensorflow.io.gfile', 'GFile') -> GFile class
+        """
+        if attr_name: 
+            lib_name = name.split('.', 1)[0]
+            return cls.import_module_attr(attr_name, module_name = name, library = lib_name, pip_name = pip_name, resolve_missing = resolve_missing)
+        if '.' in name: 
+            lib_name = name.split('.', 1)[0]
+            return cls.import_module(name, library=lib_name, pip_name=pip_name, resolve_missing=resolve_missing)
+        return cls.import_lib(name, pip_name=pip_name, resolve_missing=resolve_missing)
     
+    def _parse_name(cls, name: str) -> Dict[str, str]:
+        """
+        Resolves the name into a dict = 
+        {
+            'library': str,
+            'pip_name': Optional[str],
+            'module_name': Optional[str],
+            'attr_name': Optional[str]
+        }
+        
+        - module.submodule:attribute
+        - pip_name|module.submodule:attribute # if pip_name is not the same
+        
+        Lib['tensorflow']                   -> {'library': 'tensorflow'}
+        Lib['fusepy|fuse']                  -> {'library': 'fuse', 'pip_name': 'fusepy'}
+        Lib['tensorflow.io']                -> {'library': 'tensorflow', 'module_name': 'tensorflow.io'}
+        Lib['tensorflow.io.gfile:GFile']    -> {'library': 'tensorflow', 'module_name': 'tensorflow.io.gfile', 'attr_name': GFile}
+        """
+        rez = {'library': '', 'pip_name': None, 'module_name': None, 'attr_name': None}
+        _name = name.strip()
+        if ':' in _name:
+            _s = _name.split(':', 1)
+            rez['attr_name'] = _s[-1]
+            _name = _s[0]
+        if '|' in _name:
+            _s = _name.split('|', 1)
+            rez['pip_name'] = _s[0]
+            _name = _s[-1]
+        if '.' in _name:
+            _s = _name.split('.', 1)
+            rez['module_name'] = _name
+            rez['library'] = _s[0]
+        else: 
+            #rez['module_name'] = _name
+            rez['library'] = _name
+        return rez
+    
+    def __getitem__(cls, name: str) -> ModuleType:
+        """
+        Resolves the import based on params. 
+        Will automatically assume as resolve_missing = True, require = True
+        
+        The naming scheme is resolved as
+        
+        - module.submodule:attribute
+        - pip_name|module.submodule:attribute # if pip_name is not the same
+
+        Importing a module:
+        Lib['tensorflow'] -> tensorflow Module
+        Lib['fusepy|fuse'] -> fuse Module
+        
+        Importing a submodule:
+        Lib['tensorflow.io'] -> io submodule
+
+        Importing something from within a submodule:
+        Lib['tensorflow.io.gfile:GFile'] -> GFile class
+        """
+        r = cls._parse_name(name)
+        if r.get('attr_name'): return cls.import_module_attr(r['attr_name'], module_name = r['module_name'], library = r['library'], pip_name = r['pip_name'], resolve_missing = True, require = True)
+        if r.get('module_name'): return cls.import_module(name = r['module_name'], library = r['library'], pip_name = r['pip_name'], resolve_missing = True, require = True)
+        return cls.import_lib(r['library'], pip_name = r['pip_name'], resolve_missing = True, require = True)
+
+
 
         
 class Lib(metaclass=LibType):

@@ -1,5 +1,7 @@
 
-cache*
+cache_**
+***_cache
+**cache/**
 *.DS_Store
 tests*
 __pycache__*
@@ -13,5 +15,4 @@ __pycache__*
 *test_ops
 **test
 **.ipynb**
-**_cache**
 **__lazycls**

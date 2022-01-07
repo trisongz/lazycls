@@ -113,3 +113,11 @@ def get_pathlike(filepath: Union[str, PathLike], resolve: bool = False) -> _PATH
     if isinstance(filepath, str): filepath = as_path(filepath)
     return filepath
 
+def get_lazydir(mkdir: bool = False):
+    """
+    returns resolved '~/.lazy'
+    """
+    p = get_userhome()
+    p = p.joinpath('.lazy')
+    if mkdir: p.mkdir(exist_ok=True, parents=True)
+    return p
