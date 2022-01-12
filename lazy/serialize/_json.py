@@ -70,7 +70,7 @@ class JsonBase(Serializer):
     async def async_readlines(cls, filelike, as_iterable: bool = False, ignore_errors: bool = True, *args, **kwargs):
         if as_iterable:
             async def jsonlines_iterator():
-                for line in filelike:
+                async for line in filelike:
                     try: yield await cls.async_loads(line, *args, **kwargs)
                     except (StopIteration, KeyboardInterrupt, GeneratorExit): break
                     except Exception as e:
@@ -78,7 +78,7 @@ class JsonBase(Serializer):
                         if not ignore_errors: raise e
             return jsonlines_iterator
         rez = []
-        for line in filelike:
+        async for line in filelike:
             try: rez.append(await cls.async_loads(line, *args, **kwargs))
             except Exception as e:
                 logger.error(e)
@@ -115,7 +115,7 @@ class JsonBase(Serializer):
         if as_iterable:
             async def jsonlines_iterator():
                 async with p.async_open(mode=mode, encoding=encoding) as f:
-                    for line in f:
+                    async for line in f:
                         try: yield await cls.async_loads(line, *args, **kwargs)
                         except (StopIteration, KeyboardInterrupt, GeneratorExit): break
                         except Exception as e:
@@ -124,7 +124,7 @@ class JsonBase(Serializer):
             return jsonlines_iterator                
         rez = []
         async with p.async_open(mode=mode, encoding=encoding) as f:
-            for line in f:
+            async for line in f:
                 try: rez.append(await cls.async_loads(line, *args, **kwargs))
                 except Exception as e:
                     logger.error(e)
@@ -148,12 +148,117 @@ class JsonBase(Serializer):
         from lazy.io import get_path
         p = get_path(path)
         async with p.async_open(mode=mode, encoding=encoding) as f:
-            for line in f:
+            async for line in f:
                 try: yield await cls.async_loads(line, *args, **kwargs)
                 except StopIteration: break
                 except Exception as e:
                     logger.error(e)
                     if not ignore_errors: raise e
+    
+    @classmethod
+    def write_jsonlines(cls, filelike, data: List[Dict[Any, Any]], newline: str = '\n', ignore_errors: bool = True, flush_every: int = 0, log_errors: bool = False, **kwargs):
+        for n, i in enumerate(data):
+            try:
+                d = cls.dumps(i, **kwargs)
+                filelike.write(d)
+                filelike.write(newline)
+                if flush_every and n + 1 % flush_every == 0:
+                    filelike.flush()
+            except (StopIteration, KeyboardInterrupt, GeneratorExit): break
+            except ValueError as e:
+                if log_errors: logger.error(f'Value Error on idx {n}:\nError: {e}\nItem: {i}')
+                if ignore_errors: continue
+                raise e
+            except Exception as e:
+                if log_errors: logger.error(f'Error on idx {n}:\nError: {e}\nItem: {i}')
+                if ignore_errors: continue
+                raise e
+        filelike.flush()
+
+    @classmethod
+    async def async_write_jsonlines(cls, filelike, data: List[Dict[Any, Any]], newline: str = '\n', ignore_errors: bool = True, flush_every: int = 0, log_errors: bool = False, **kwargs):
+        for n, i in enumerate(data):
+            try:
+                d = await cls.async_dumps(i, **kwargs)
+                await filelike.write(d)
+                await filelike.write(newline)
+                if flush_every and n + 1 % flush_every == 0:
+                    await filelike.flush()
+            except (StopIteration, KeyboardInterrupt, GeneratorExit): break
+            except ValueError as e:
+                if log_errors: logger.error(f'Value Error on idx {n}:\nError: {e}\nItem: {i}')
+                if ignore_errors: continue
+                raise e
+            except Exception as e:
+                if log_errors: logger.error(f'Error on idx {n}:\nError: {e}\nItem: {i}')
+                if ignore_errors: continue
+                raise e
+        await filelike.flush() 
+    
+    @classmethod
+    async def async_yield_jsonlines(cls, data: List[Dict[Any, Any]], ignore_errors: bool = True, log_errors: bool = False, **kwargs):
+        for n, i in enumerate(data):
+            try:
+                yield await cls.async_dumps(i, **kwargs)
+            except (StopIteration, KeyboardInterrupt, GeneratorExit): break
+            except ValueError as e:
+                if log_errors: logger.error(f'Value Error on idx {n}:\nError: {e}\nItem: {i}')
+                if ignore_errors: continue
+                raise e
+            except Exception as e:
+                if log_errors: logger.error(f'Error on idx {n}:\nError: {e}\nItem: {i}')
+                if ignore_errors: continue
+                raise e
+        
+
+        
+
+    @classmethod
+    def writelines(cls, path: PathLike, data: List[Dict[Any, Any]], append: bool = False, encoding: str = 'utf-8', newline: str = '\n', ignore_errors: bool = True, ensure_file_exists: bool = True, flush_every: int = 0, log_errors: bool = False, **kwargs):
+        from lazy.io import get_path
+        p = get_path(path)
+        if ensure_file_exists and not p.exists(): p.touch()
+        mode = 'a' if (append and p.exists()) or ensure_file_exists else 'w'
+        with p.open(mode=mode, encoding=encoding) as f:
+            for n, i in enumerate(data):
+                try:
+                    d = cls.dumps(i, **kwargs)
+                    f.write(d)
+                    f.write(newline)
+                    if flush_every and n + 1 % flush_every == 0:
+                        f.flush()
+                except (StopIteration, KeyboardInterrupt, GeneratorExit): break
+                except ValueError as e:
+                    if log_errors: logger.error(f'Value Error on idx {n}:\nError: {e}\nItem: {i}')
+                    if ignore_errors: continue
+                    raise e
+                except Exception as e:
+                    if log_errors: logger.error(f'Error on idx {n}:\nError: {e}\nItem: {i}')
+                    if ignore_errors: continue
+                    raise e
+    
+    @classmethod
+    async def async_writelines(cls, path: PathLike, data: List[Dict[Any, Any]], append: bool = False, encoding: str = 'utf-8', newline: str = '\n', ignore_errors: bool = True, ensure_file_exists: bool = True, flush_every: int = 0, log_errors: bool = False, **kwargs):
+        from lazy.io import get_path
+        p = get_path(path)
+        if ensure_file_exists and not await p.async_exists(): await p.async_touch()
+        mode = 'a' if (append and await p.async_exists()) or ensure_file_exists else 'w'
+        async with await p.async_open(mode=mode, encoding=encoding) as f:
+            for n, i in enumerate(data):
+                try:
+                    d = await cls.async_dumps(i, **kwargs)
+                    await f.write(d + newline)
+                    if flush_every and n + 1 % flush_every == 0:
+                        await f.flush()
+                except (StopIteration, KeyboardInterrupt, GeneratorExit): break
+                except ValueError as e:
+                    if log_errors: logger.error(f'Value Error on idx {n}:\nError: {e}\nItem: {i}')
+                    if ignore_errors: continue
+                    raise e
+                except Exception as e:
+                    if log_errors: logger.error(f'Error on idx {n}:\nError: {e}\nItem: {i}')
+                    if ignore_errors: continue
+                    raise e
 
 
 

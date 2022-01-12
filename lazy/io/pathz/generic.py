@@ -103,12 +103,16 @@ def resolve_relative(filepath: Union[str, PathLike]) -> str:
     elif filepath.startswith('.'): filepath = filepath.replace('.', pathlib.Path(get_cwd()).parent.as_posix() + '/', 1)
     return filepath
 
-def get_path(filepath: Union[str, PathLike], resolve: bool = False) -> _PATHLIKE_CLS:
+
+PathzPath = (core.PosixFSxPath, core.WindowsFSxPath, cloud.PosixGCSPath, cloud.PosixS3Path, cloud.WindowsS3Path, cloud.WindowsGCSPath, pathlib.Path, pathlib.PosixPath, pathlib.PurePath, str)
+PathzLike = Union[Type[core.PosixFSxPath], Type[core.WindowsFSxPath], Type[cloud.PosixGCSPath], Type[cloud.PosixS3Path], Type[cloud.WindowsS3Path], Type[cloud.WindowsGCSPath], Type[pathlib.PosixPath], Type[pathlib.PurePath], Type[core.ReadOnlyPath], Type[core.ReadWritePath]]
+
+def get_path(filepath: Union[str, PathLike], resolve: bool = False) -> PathzLike:
     if resolve: filepath = resolve_relative(filepath)
     if isinstance(filepath, str): filepath = as_path(filepath)
     return filepath
 
-def get_pathlike(filepath: Union[str, PathLike], resolve: bool = False) -> _PATHLIKE_CLS:
+def get_pathlike(filepath: Union[str, PathLike], resolve: bool = False) -> PathzLike:
     if resolve: filepath = resolve_relative(filepath)
     if isinstance(filepath, str): filepath = as_path(filepath)
     return filepath

@@ -17,6 +17,8 @@ class Serialize:
     Secret: Secret = Secret
     Pkl: BasePickle = Pkl
     Compress = Compression
+    SimdJson: SimdJson = SimdJson
+    OrJson: OrJson = OrJson
     
 
 

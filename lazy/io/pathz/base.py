@@ -124,6 +124,10 @@ class PurePath(Protocol):
         raise NotImplementedError
     
     @property
+    def string(self: T) -> str:
+        return self.as_posix()
+    
+    @property
     def file_ext(self: T) -> T:
         return self.suffix[1:]
 
@@ -137,6 +141,36 @@ class PurePath(Protocol):
 
     @property
     def bucket_path(self) -> Optional[str]:
+        raise NotImplementedError
+    
+    @property
+    def _path_str(self) -> str:
+        """
+        Returns the `__fspath__` string representation.
+        """
+        raise NotImplementedError
+    
+    @property
+    def _filename_str(self) -> str:
+        """
+        Returns the filename if is file, else ''
+        """
+        if self.is_file(): return self.parts[-1]
+        return ''
+    
+
+    @property
+    def extension(self) -> str:
+        """
+        Returns the extension for a file
+        """
+        return self.suffix
+
+    @property
+    def _cpath_str(self) -> str:
+        """
+        Returns the `__fspath__` string representation without the uri_scheme
+        """
         raise NotImplementedError
 
     # py3.9 backport of PurePath.is_relative_to.
@@ -210,6 +244,14 @@ class ReadOnlyPath(PurePath, Protocol):
     ) -> typing.IO[AnyStr]:
         """Opens the file."""
     
+    def as_reader(self, mode='r', encoding: Optional[str] = DEFAULT_ENCODING, **kwargs):
+        """ Reads the File in r """
+        return self.open(mode=mode, encoding=encoding, **kwargs)
+    
+    def reader(self, mode='r', encoding: Optional[str] = DEFAULT_ENCODING, **kwargs):
+        """ Reads the File in r """
+        return self.open(mode=mode, encoding=encoding, **kwargs)
+    
     def read(self, mode='r', encoding: Optional[str] = DEFAULT_ENCODING, **kwargs) -> str:
         """ Reads the File in r """
         with self.open(mode=mode, encoding=encoding, **kwargs) as f:
@@ -256,6 +298,77 @@ class ReadOnlyPath(PurePath, Protocol):
     def read_pickle(self, mode: str = 'rb', **kwargs):
         with self.open(mode=mode) as f:
             return Serialize.Pkl.loads(f.read(), **kwargs)
+
+
+    @abc.abstractmethod
+    async def async_open(
+            self,
+            mode: str = 'r',
+            encoding: Optional[str] = DEFAULT_ENCODING,
+            errors: Optional[str] = None,
+            **kwargs: Any,
+    ) -> typing.IO[AnyStr]:
+        """Asyncronously Opens the file."""
+    
+    async def async_exists(self) -> bool:
+        return self.exists()
+
+    async def async_as_reader(self, mode='r', encoding: Optional[str] = DEFAULT_ENCODING, **kwargs):
+        """ Reads the File in r """
+        return await self.async_open(mode=mode, encoding=encoding, **kwargs)
+    
+    async def async_reader(self, mode='r', encoding: Optional[str] = DEFAULT_ENCODING, **kwargs):
+        """ Reads the File in r """
+        return await self.async_open(mode=mode, encoding=encoding, **kwargs)
+
+    async def async_read(self, mode='r', encoding: Optional[str] = DEFAULT_ENCODING, **kwargs) -> str:
+        """ Reads the File in r """
+        #with await self.async_open(mode=mode, encoding=encoding, **kwargs) as f:
+        async with self.async_open(mode=mode, encoding=encoding, **kwargs) as f:
+            reader = getattr(f, '_read', getattr(f, 'read'))
+            return await reader()
+    
+    async def async_read_b(self, mode='rb', **kwargs) -> bytes:
+        """ Reads the File in rb """
+        async with self.async_open(mode=mode) as f:
+            reader = getattr(f, '_read', getattr(f, 'read'))
+            return await reader()
+    
+    async def async_readlines(self, **kwargs) -> List[str]:
+        async with self.async_open('r', **kwargs) as f:
+            reader = getattr(f, '_readlines', getattr(f, 'readlines'))
+            return await reader()
+
+    async def async_read_bytes(self) -> bytes:
+        """Reads contents of self as bytes."""
+        async with self.async_open('rb') as f:
+            reader = getattr(f, '_read', getattr(f, 'read'))
+            return await reader()
+
+    async def async_read_text(self, encoding: Optional[str] = DEFAULT_ENCODING, **kwargs) -> str:
+        """Reads contents of self as bytes."""
+        async with self.async_open('r', encoding=encoding, **kwargs) as f:
+            reader = getattr(f, '_read', getattr(f, 'read'))
+            return await reader()
+    
+    """ Async Serializer Specific Methods """
+
+    async def async_read_json(self, encoding: Optional[str] = DEFAULT_ENCODING, **kwargs) -> JsonType:
+        #with self.open('r', encoding=encoding) as f:
+        return await Serialize.Json.async_loads(await self.async_read_text(encoding = encoding), **kwargs)
+        
+    async def async_read_jsonlines(self,  mode: str = 'r', skip_errors: bool = True, as_iterable: bool = True, **kwargs) -> Iterator[T]:
+        async with self.async_open(mode=mode) as f:
+            return await Serialize.Json.async_readlines(f, as_iterable = as_iterable, skip_errors = skip_errors, **kwargs)
+    
+    async def async_read_yaml(self, encoding: Optional[str] = DEFAULT_ENCODING, **kwargs) -> JsonType:
+        #with self.open('r', encoding=encoding) as f:
+        return await Serialize.Yaml.async_loads(await self.async_read_text(encoding = encoding), **kwargs)
+    
+    async def async_read_pickle(self, mode: str = 'rb', **kwargs):
+        async with self.async_open(mode=mode) as f:
+            reader = getattr(f, '_read', getattr(f, 'read'))
+            return await Serialize.Pkl.async_loads(await reader(), **kwargs)
     
 
 
@@ -304,6 +417,22 @@ class ReadWritePath(ReadOnlyPath, Protocol):
     @abc.abstractmethod
     def copy(self: T, dst: PathLike, overwrite: bool = False) -> T:
         """Copy the current file to the given destination."""
+    
+    def as_writer(self, mode='w', encoding: Optional[str] = DEFAULT_ENCODING, **kwargs):
+        """ Reads the File in w"""
+        return self.open(mode=mode, encoding=encoding, **kwargs)
+    
+    def writer(self, mode='w', encoding: Optional[str] = DEFAULT_ENCODING, **kwargs):
+        """ Reads the File in w """
+        return self.open(mode=mode, encoding=encoding, **kwargs)
+
+    async def async_as_writer(self, mode='w', encoding: Optional[str] = DEFAULT_ENCODING, **kwargs):
+        """ Reads the File in w"""
+        return await self.async_open(mode=mode, encoding=encoding, **kwargs)
+    
+    async def async_writer(self, mode='w', encoding: Optional[str] = DEFAULT_ENCODING, **kwargs):
+        """ Reads the File in w """
+        return await self.async_open(mode=mode, encoding=encoding, **kwargs)
     
     @property
     def absolute_parent(self: T) -> T:
@@ -389,12 +518,68 @@ class ReadWritePath(ReadOnlyPath, Protocol):
         if ensure_file_exists and not self.exists(): self.touch()
         mode = 'a' if (append and self.exists()) or ensure_file_exists else 'w'
         with self.open(mode=mode, encoding=encoding) as f:
+            Serialize.Json.write_jsonlines(f, data = data, newline = newline, ignore_errors = ignore_errors, flush_every = flush_every, log_errors = log_errors, **kwargs)
+            
+
+    """
+    Async Methods
+    """
+
+    async def async_touch(self, mode: int = 0o666, exist_ok: bool = True) -> None:
+        """Create a file at this given path."""
+        del mode    # Unused
+        if await self.async_exists():
+            if exist_ok: return
+            else: raise FileExistsError(f'{self} already exists.')
+        await self.async_write_text('', mode='w')
+
+    async def async_write_bytes(self, data: bytes) -> None:
+        """Writes content as bytes."""
+        async with self.open('wb') as f:
+            return await f.write(data)
+
+    async def async_write_text(self, data: str, append: bool = False, encoding: Optional[str] = DEFAULT_ENCODING, errors: Optional[str] = None) -> None:
+        """Writes content as str."""
+        mode = 'a' if append and self.exists() else 'w'
+        async with self.async_open(mode, encoding=encoding, errors=errors) as f:
+            writer = getattr(f, '_write', getattr(f, 'write'))
+            if 'a' in mode:
+                await writer('\n')
+            return await writer(data)
+    
+
+    """ Serializer Specific Methods """
+
+    async def async_write_pickle(self, obj: Any, **kwargs) -> None:
+        data = await Serialize.Pkl.async_dumps(obj, **kwargs)
+        return await self.async_write_bytes(data)
+
+    async def async_write_yaml(self, data: JsonType, encoding: Optional[str] = DEFAULT_ENCODING, **kwargs) -> None:
+        """Writes Json to File"""
+        async with self.async_open('w', encoding = encoding) as f:
+            writer = getattr(f, '_write', getattr(f, 'write'))
+            await writer(await Serialize.Yaml.async_dumps(data, **kwargs))
+            #await f.write(await Serialize.Yaml.async_dumps(data, **kwargs))
+
+    async def async_write_json(self, data: JsonType, encoding: Optional[str] = DEFAULT_ENCODING, ensure_ascii: bool = False, indent: int = 2, **kwargs) -> None:
+        """Writes Json to File"""
+        async with self.async_open('w', encoding = encoding) as f:
+            writer = getattr(f, '_write', getattr(f, 'write'))
+            await writer(await Serialize.Json.async_dumps(data, ensure_ascii=ensure_ascii, indent=indent, **kwargs))
+            #await f.write(await Serialize.Json.async_dumps(data, ensure_ascii=ensure_ascii, indent=indent, **kwargs))
+    
+    async def async_write_jsonlines(self, data: List[JsonType], append: bool = False, encoding: Optional[str] = DEFAULT_ENCODING, newline: str = '\n', ignore_errors: bool = True, ensure_file_exists: bool = True, flush_every: int = 0, log_errors: bool = False, **kwargs):
+        if ensure_file_exists and not await self.async_exists(): await self.async_touch()
+        mode = 'a' if (append and await self.async_exists()) or ensure_file_exists else 'w'
+        async with self.async_open(mode=mode, encoding=encoding) as f:
+            writer = getattr(f, '_write', getattr(f, 'write'))
+            flusher = getattr(f, '_flush', getattr(f, 'flush'))
             for n, i in enumerate(data):
                 try:
-                    d = Serialize.Json.dumps(i, **kwargs)
-                    f.write(d + newline)
+                    d = await Serialize.Json.async_dumps(i, **kwargs)
+                    await writer(d + newline)
                     if flush_every and n + 1 % flush_every == 0:
-                        f.flush()
+                        await flusher()
                 except (StopIteration, KeyboardInterrupt, GeneratorExit): break
                 except ValueError as e:
                     if log_errors: logger.error(f'Value Error on idx {n}:\nError: {e}\nItem: {i}')
@@ -404,5 +589,4 @@ class ReadWritePath(ReadOnlyPath, Protocol):
                     if log_errors: logger.error(f'Error on idx {n}:\nError: {e}\nItem: {i}')
                     if ignore_errors: continue
                     raise e
-
     

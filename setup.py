@@ -14,6 +14,7 @@ root = Path(__file__).parent
 requirements = [
     #'aiofiles',
     'anyio',
+    'aiopath',
     'dill',
     'fsspec',
     'orjson',

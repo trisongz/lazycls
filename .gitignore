@@ -1,6 +1,7 @@
 
 cache_**
 ***_cache
+***_cache_*
 **cache/**
 *.DS_Store
 tests*

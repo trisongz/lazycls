@@ -34,7 +34,7 @@ ReadOnlyPath = base.ReadOnlyPath
 ReadWritePath = base.ReadWritePath
 PathLikeCls = Union[Type[ReadOnlyPath], Type[ReadWritePath]]
 
-class _IOPath(pathlib.PurePath, base.ReadWritePath):
+class _IOPath(pathlib.PurePath, ReadWritePath):
     """Pathlib-like API around `fsspec` providing Async Capabilities"""
     _PATH: ClassVar[types.ModuleType]
     _FSX: ClassVar[types.ModuleType] = None
@@ -1054,7 +1054,6 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         return self.sync_fs.info(self._cpath_str)
     
     
-    
     @property
     def isdir(self) -> bool:
         """
@@ -1103,34 +1102,47 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
     ####         Async Versions of the Sync Functions           ###
     ###############################################################
 
+    def _get_afs_attr(self, name: str, default: Optional[Callable] = None):
+        return getattr(self.async_fs, f'_{name}', getattr(self.async_fs, name, default))
+
     async def async_info(self):
         """
         Give details of entry at path
         """
-        return await self.async_fs._info(self._cpath_str)
+        try: return await self._get_afs_attr('info')(self._cpath_str)
+        except: return self.sync_fs.info(self._cpath_str)
+        #return await self.async_fs._info(self._cpath_str)
 
     async def async_exists(self) -> bool:
         """
         Returns True if self exists.
         """
-        return await self.async_fs._exists(self._cpath_str)
+        try: return await self._get_afs_attr('exists')(self._cpath_str)
+        except: return self.sync_fs.exists(self._cpath_str)
+        #return await self.async_fs._exists(self._cpath_str)
 
     async def async_is_dir(self) -> bool:
         """
         Returns True if self is a directory.
         """
-        return await self.async_fs._isdir(self._cpath_str)
+        try: return await self._get_afs_attr('info')(self._cpath_str)
+        except: return self.sync_fs.info(self._cpath_str)
+        #return await self.async_fs._isdir(self._cpath_str)
 
     async def async_is_file(self) -> bool:
         """Returns True if self is a file."""
-        return await self.async_fs._isfile(self._cpath_str)
+        try: return await self._get_afs_attr('isfile')(self._cpath_str)
+        except: return self.sync_fs.isfile(self._cpath_str)
+        # return await self.async_fs._isfile(self._cpath_str)
 
 
     async def async_cat(self, recursive: bool = False, on_error: Optional[str] = None, **kwargs):
         """
         Fetch (potentially multiple) paths contents
         """
-        return await self.async_fs._cat(self._cpath_str, recursive, on_error, **kwargs)
+        try: return self._get_afs_attr('cat')(self._cpath_str, recursive, on_error, **kwargs)
+        except: return self.sync_fs.cat(self._cpath_str, recursive, on_error, **kwargs)
+        #return await self.async_fs._cat(self._cpath_str, recursive, on_error, **kwargs)
     
     async def async_cat_file(self, start: Optional[int] = None, end: Optional[int] = None, **kwargs):
         """
@@ -1312,7 +1324,7 @@ class PosixFSxPath(_IOPath, pathlib.PurePosixPath):
         """
         Delete a file
         """
-        if not self.exists():
+        if not await self.async_exists():
             if missing_ok: return
             raise ValueError(f"{self._path_str} does not exist")
         await self.async_fs._rm_file(self._cpath_str, **kwargs)
