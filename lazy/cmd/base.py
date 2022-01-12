@@ -9,6 +9,6 @@ from glob import glob
 from subprocess import PIPE, Popen, TimeoutExpired
 from lazy.types import classproperty
 from lazy.serialize import OrJson
-from lazy.io import pathz, get_path, PathLike, PathzPath
+from lazy.io import PathLike, PathzPath, get_path
 
 

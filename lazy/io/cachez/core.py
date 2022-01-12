@@ -23,6 +23,11 @@ import zlib
 import dill
 
 from .static import *
+from typing import TYPE_CHECKING, Type
+from types import ModuleType
+
+if TYPE_CHECKING:
+    from lazy.io.pathz_v2 import PathzPath, PathzLike, PathLike
 
 _zlib = zlib
 _isal_attempted: bool = False
@@ -41,18 +46,19 @@ def get_zlib():
 
 
 
-
 class Disk:
     "Cache key and value serialization for SQLite database and files."
 
-    def __init__(self, directory, min_file_size=0, pickle_protocol=0):
+    def __init__(self, directory: str = None, database_name: str = None, min_file_size: int = 0, pickle_protocol: int = 0):
         """Initialize disk instance.
         :param str directory: directory path
+        :param str database_name: name prefix for cache file. will be prefixed to `-cache.db`
         :param int min_file_size: minimum size for file use
         :param int pickle_protocol: pickle protocol for serialization
         """
         get_zlib()
         self._directory = directory
+        self._db_name = database_name
         self.min_file_size = min_file_size
         self.pickle_protocol = pickle_protocol
 
@@ -255,7 +261,7 @@ class Disk:
 class JSONDisk(Disk):
     "Cache key and value using JSON serialization with zlib compression."
 
-    def __init__(self, directory, compress_level=3, **kwargs):
+    def __init__(self, directory, database_name: str = None, compress_level: int = 3, **kwargs):
         """Initialize JSON disk instance.
         Keys and values are compressed using the zlib library. The
         `compress_level` is an integer from 0 to 9 controlling the level of
@@ -266,7 +272,7 @@ class JSONDisk(Disk):
         :param kwargs: super class arguments
         """
         self.compress_level = compress_level
-        super().__init__(directory, **kwargs)
+        super().__init__(directory, database_name, **kwargs)
 
     def put(self, key):
         json_bytes = json.dumps(key).encode('utf-8')
@@ -331,23 +337,30 @@ def args_to_key(base, args, kwargs, typed):
 class Cache:
     "Disk and file backed cache."
 
-    def __init__(self, directory=None, timeout=60, disk=Disk, **settings):
+    def __init__(self, directory: str = None, database_name: str = None, timeout: int = 60, disk: Type[Disk] = Disk, **settings):
         """Initialize cache instance.
         :param str directory: cache directory
+        :param str database_name: name prefix for cache file. will be prefixed to `-cache.db`
         :param float timeout: SQLite connection timeout
         :param disk: Disk type or subclass for serialization
         :param settings: any of DEFAULT_SETTINGS
         """
-        try:
-            assert issubclass(disk, Disk)
-        except (TypeError, AssertionError):
-            raise ValueError('disk must subclass lazy.io.cachez.Disk') from None
+        try: assert issubclass(disk, Disk)
+        except (TypeError, AssertionError): raise ValueError('disk must subclass lazy.io.cachez.Disk') from None
+        from lazy.io.pathz_v2 import get_path
+
         if directory is None:
             directory = tempfile.mkdtemp(prefix='cachez-')
         directory = op.expanduser(directory)
         directory = op.expandvars(directory)
 
         self._directory = directory
+        self._directory_path = get_path(directory)
+
+        database_name = DBNAME if database_name is None else database_name + '-cache.db'        
+        self._db_name = database_name
+        self._db_path = self._directory_path.joinpath(database_name)
+
         self._timeout = 0  # Manually handle retries during initialization.
         self._local = threading.local()
         self._txn_id = None
@@ -500,10 +513,26 @@ class Cache:
         self._timeout = timeout
         self._sql  # pylint: disable=pointless-statement
 
+
+    @property
+    def db_name(self):
+        """Database Name"""
+        return self._db_name
+    
+    @property
+    def db_path(self):
+        """PathLike to Database File"""
+        return self._db_path
+
     @property
     def directory(self):
         """Cache directory."""
         return self._directory
+    
+    @property
+    def directory_path(self):
+        """PathLike Cache directory."""
+        return self._directory_path
 
     @property
     def timeout(self):
@@ -530,12 +559,8 @@ class Cache:
         con = getattr(self._local, 'con', None)
 
         if con is None:
-            con = self._local.con = sqlite3.connect(
-                op.join(self._directory, DBNAME),
-                timeout=self._timeout,
-                isolation_level=None,
-            )
-
+            #con = self._local.con = sqlite3.connect(op.join(self._directory, DBNAME), timeout=self._timeout, isolation_level=None)
+            con = self._local.con = sqlite3.connect(self._db_path.string, timeout=self._timeout, isolation_level=None)
             # Some SQLite pragmas work on a per-connection basis so
             # query the Settings table and reset the pragmas. The
             # Settings table may not exist so catch and ignore the
@@ -575,11 +600,9 @@ class Cache:
                 try:
                     return sql(statement, *args, **kwargs)
                 except sqlite3.OperationalError as exc:
-                    if str(exc) != 'database is locked':
-                        raise
+                    if str(exc) != 'database is locked': raise
                     diff = time.time() - start
-                    if diff > 60:
-                        raise
+                    if diff > 60: raise
                     time.sleep(0.001)
 
         return _execute_with_retry
@@ -1797,7 +1820,7 @@ class Cache:
                     error = set(paths) - filenames
 
                     for full_path in error:
-                        if DBNAME in full_path:
+                        if DBNAME in full_path or self._db_name in full_path:
                             continue
 
                         message = 'unknown file: %s' % full_path

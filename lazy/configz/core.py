@@ -11,7 +11,7 @@ from collections import namedtuple
 from inspect import currentframe
 from pydantic import BaseSettings
 from pydantic.env_settings import SettingsSourceCallable
-from typing import List, Tuple, Dict, Any, Type
+from typing import List, Tuple, Dict, Any, Type, TYPE_CHECKING
 
 try:
     from pydantic.main import ModelMetaclass
@@ -80,7 +80,7 @@ class ConfigCls(BaseSettings, metaclass=ConfigClsMeta):
         @classmethod
         def customise_sources(cls, init_settings: SettingsSourceCallable, env_settings: SettingsSourceCallable, file_secret_settings: SettingsSourceCallable) -> Tuple[SettingsSourceCallable, ...]:
             return init_settings, dynamic_config_settings_source, env_settings, file_secret_settings
-
+        
         auto_init = False
         env_prefix = ""
         arbitrary_types_allowed = True

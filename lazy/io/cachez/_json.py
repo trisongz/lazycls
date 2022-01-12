@@ -1,8 +1,8 @@
 
 import orjson as _orjson
-import ujson as _ujson
+#import ujson as _ujson
 import simdjson as _simdjson
-import rapidjson as _rjson
+#import rapidjson as _rjson
 
 from .static import *
 from .core import Disk, JSONDisk, _zlib

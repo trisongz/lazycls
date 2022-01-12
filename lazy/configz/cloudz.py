@@ -3,13 +3,15 @@
 """
 Cloud Provider Configs
 """
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
 from lazy.types import pyd
 from .core import ConfigCls
+
+### need to refactor later since there's circular dependencies
+### with PathStr
+
 from .types import *
-
-
-## not sure if needed
 from logz import get_logger
 logger = get_logger('cloudauthz')
 

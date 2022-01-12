@@ -75,6 +75,11 @@ class Base(Serializer):
         t = getattr(uuid, method, Defaults.uuid_method)
         return str(t(*args, **kwargs))
     
+    @staticmethod
+    async def async_uuid(method: str = Defaults.uuid_method, *args, **kwargs):
+        t = getattr(uuid, method, Defaults.uuid_method)
+        return str(t(*args, **kwargs))
+    
     @classmethod
     def get_encode_method(cls, method: str = Defaults.base_method):
         if method.lower() in {'b64', 'base64'}: return cls.b64_encode

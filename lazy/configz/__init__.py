@@ -1,5 +1,5 @@
-from . import types
 from . import core
+from . import types
 from . import cloudz
 
 from .core import ConfigCls, ConfigClsMeta

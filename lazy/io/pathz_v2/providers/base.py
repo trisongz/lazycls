@@ -8,7 +8,7 @@ import pathlib
 import posixpath
 from pathlib import PosixPath, WindowsPath, Path, PurePath
 from pathlib import _NormalAccessor as NormalAccessor
-from typing import Optional, List, Union, AsyncIterable, Iterable, IO, TYPE_CHECKING, AsyncContextManager, cast
+from typing import Optional, List, Union, AsyncIterable, Iterable, IO, TYPE_CHECKING, AsyncContextManager, cast, Callable
 from os import stat_result, PathLike
 from contextlib import asynccontextmanager
 
@@ -20,11 +20,12 @@ from aiopath.types import Final, Literal, FileMode
 from fsspec.asyn import AsyncFileSystem
 from anyio import AsyncFile, open_file
 from lazy.serialize import Serialize
-from ..types import *
+from lazy.io.pathz_v2.types import *
+#from ..types import *
 from .cloud_static import _ASYNC_SYNTAX_MAPPING
 
 if TYPE_CHECKING:  # keep mypy quiet
-    from ..base import PathzPath
+    from lazy.io.pathz_v2.base import PathzPath
 
 URI_PREFIXES = ('gs://', 's3://', 'minio://', 's3compat://')
 _URI_SCHEMES = frozenset(('gs', 's3', 'minio', 's3compat'))

@@ -133,7 +133,7 @@ class JsonBase(Serializer):
 
     @classmethod
     def iterlines(cls, path: PathLike, mode: str = Mode.read, encoding: str = 'utf-8', ignore_errors: bool = True, *args, **kwargs):
-        from lazy.io import get_path
+        from lazy.io.pathz_v2 import get_path
         p = get_path(path)
         with p.open(mode=mode, encoding=encoding) as f:
             for line in f:

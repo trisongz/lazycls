@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 try: import s3fs
 except ImportError: s3fs: ModuleType = None
 
-try: from lazy import CloudAuthz
+try: from lazy.configz.cloudz import CloudAuthz
 except ImportError: CloudAuthz: object = None
 
 
@@ -28,11 +28,12 @@ class _CFS:
         """
         if cls.fs and cls.fsa and not force: return
         from lazy.libz import Lib
-        from lazy import CloudAuthz
-        import importlib
+        from lazy.configz.cloudz import CloudAuthz
+        #import importlib
 
         _s3fs: ModuleType = Lib.import_lib('s3fs')
-        importlib.reload(s3fs)
+        Lib.reload_module(s3fs)
+        #importlib.reload(s3fs)
 
         authz = CloudAuthz()
         if auth_config: authz.update_authz(**auth_config)
@@ -53,7 +54,8 @@ class _CFS:
         """ 
         Reinitializes the Filesystem
         """
-        global _pathz_s3_accessor, _PathzS3Accessor
+        #global _pathz_s3_accessor, _PathzS3Accessor
+        global _PathzS3Accessor
         cls.build_filesystems(force=True)
         _PathzS3Accessor = _create_accessor()
         _pathz_s3_accessor = _PathzS3Accessor()
@@ -72,6 +74,10 @@ class _PathzS3Accessor(NormalAccessor):
         is_dir = _CFS.fs.isdir
         is_file = _CFS.fs.isfile
         touch = _CFS.fs.touch
+        copy = _CFS.fs.copy
+        copy_file = staticmethod(_CFS.fs.cp_file)
+        put = _CFS.fs.put
+        put_file = staticmethod(_CFS.fs.put_file)
 
         ukey = _CFS.fs.ukey
         size = _CFS.fs.size
@@ -99,6 +105,13 @@ class _PathzS3Accessor(NormalAccessor):
         async_glob = _CFS.fsa.async_glob
         async_is_dir = _CFS.fsa.async_isdir
         async_is_file = _CFS.fsa.async_isfile
+        async_copy = _CFS.fsa.async_copy
+        async_copy_file = _CFS.fsa.async_copy_file
+        async_get = _CFS.fsa.async_get
+        async_get_file = _CFS.fsa.async_get_file
+        async_put = _CFS.fsa.async_put
+        async_put_file = _CFS.fsa.async_put_file
+
 
         async_touch = func_as_method_coro(_CFS.fs.touch)
         async_ukey = func_as_method_coro(_CFS.fs.ukey)
@@ -126,21 +139,27 @@ class _PathzS3Accessor(NormalAccessor):
 def _create_accessor():
     class _PathzS3Accessor(NormalAccessor):
         # Sync methods
-        info = staticmethod(_CFS.fs.info)
-        stat = staticmethod(_CFS.fs.stat)
+        info = _CFS.fs.info
+        stat = _CFS.fs.stat
         open = _CFS.fs.open
         listdir = _CFS.fs.ls
         exists = _CFS.fs.exists
         glob = _CFS.fs.glob
-        is_dir = staticmethod(_CFS.fs.isdir)
-        is_file = staticmethod(_CFS.fs.isfile)
+        is_dir = _CFS.fs.isdir
+        is_file = _CFS.fs.isfile
         touch = _CFS.fs.touch
+        copy = _CFS.fs.copy
+        copy_file = staticmethod(_CFS.fs.cp_file)
+        get = _CFS.fs.get
+        get_file = staticmethod(_CFS.fs.get_file)
+        put = _CFS.fs.put
+        put_file = staticmethod(_CFS.fs.put_file)
 
         ukey = _CFS.fs.ukey
-        size = staticmethod(_CFS.fs.size)
+        size = _CFS.fs.size
         url = _CFS.fs.url
         modified = _CFS.fs.modified
-        metadata = staticmethod(_CFS.fs.info)
+        metadata = _CFS.fs.metadata
 
         mkdir = _CFS.fs.mkdir
         makedirs = _CFS.fs.makedirs
@@ -162,6 +181,13 @@ def _create_accessor():
         async_glob = _CFS.fsa.async_glob
         async_is_dir = _CFS.fsa.async_isdir
         async_is_file = _CFS.fsa.async_isfile
+        async_copy = _CFS.fsa.async_copy
+        async_copy_file = _CFS.fsa.async_cp_file
+        async_get = _CFS.fsa.async_get
+        async_get_file = _CFS.fsa.async_get_file
+        async_put = _CFS.fsa.async_put
+        async_put_file = _CFS.fsa.async_put_file
+
 
         async_touch = func_as_method_coro(_CFS.fs.touch)
         async_ukey = func_as_method_coro(_CFS.fs.ukey)

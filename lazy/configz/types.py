@@ -168,15 +168,25 @@ class YamlBGZStr(EnvType):
     @classmethod
     def cast(cls, v: str): return Serialize.YamlBGZ.loads(v)
 
-try: from lazy.io import PathLike, PathzPath
-except ImportError: 
-    PathLike = os.PathLike
-    PathzPath = Tuple[str, Type[pathlib.Path], Type[os.PathLike]]
+if TYPE_CHECKING:
+    try: from lazy.io.pathz_v2 import PathLike, PathzLike, get_path
+    except ImportError: 
+        PathLike: os.PathLike
+        PathzPath = Tuple[str, Type[pathlib.Path], Type[os.PathLike]]
+
+    #try: from lazy.io.pathz_v2 import PathLike, PathzPath
+    #except ImportError: 
+    #    PathLike = os.PathLike
+    #    PathzPath = Tuple[str, Type[pathlib.Path], Type[os.PathLike]]
 
 
-def _get_pathio(p) -> 'PathzPath':
-    from lazy.io import get_path
+def _get_pathio(p) -> 'PathzLike':
+    from lazy.io.pathz_v2.generic import get_path
     return get_path(p)
+
+"""
+need to figure this out later. it's problematic. bc of type checking with CloudAuthz
+"""
 
 class PathStr(EnvType):
     """
@@ -188,9 +198,11 @@ class PathStr(EnvType):
     @classmethod
     def cast(cls, v: str) -> 'PathLike':
         #from lazy.io import get_path
+        #from lazy.io.pathz_v2.generic import get_path
         # Fix Home
         if '~' in v: v = v.replace('~', os.path.expanduser('~'))
         ## will import dynamically later.
+        #p = get_path(v)
         p = _get_pathio(v)
         p.resolve()
         p.mkdir(exist_ok=True, parents=True)
@@ -207,8 +219,9 @@ class PathStr(EnvType):
                 cls.set_to_env(to_val)
                 return to_val
             return val
-        except Exception as e: 
-            print(e)
+        except Exception as e:
+            #if not TYPE_CHECKING:
+            #print('Error from configtypes', e)
             return ""
 
 

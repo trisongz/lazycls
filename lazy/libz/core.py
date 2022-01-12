@@ -219,9 +219,9 @@ class LibType(type):
         if provider == 's3': return bash(scriptz.as_posix(), bucket_path, mountpoint, 'aws', *cliargs, **kwargs).val
         return bash(scriptz.as_posix(), bucket_path, mountpoint, provider, *cliargs, **kwargs).val
 
-
-
-
+    @staticmethod
+    def reload_module(module: ModuleType):
+        return importlib.reload(module)
 
     def __getattr__(cls, key):
         """

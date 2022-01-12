@@ -4,13 +4,17 @@ import datetime
 from .base import *
 from ..flavours import _async_sync_windows_flavour, _async_sync_posix_flavour
 
-#if TYPE_CHECKING:
-    
+
+if TYPE_CHECKING:
+    try: from lazy.io.pathz_v2 import PathLike
+    except ImportError: PathLike = type
+    #from lazy.io.pathz_v2 import PathLike
+
 
 try: import gcsfs
 except ImportError: gcsfs: ModuleType = None
 
-try: from lazy import CloudAuthz
+try: from lazy.configz.cloudz import CloudAuthz
 except ImportError: CloudAuthz: object = None
 
 
@@ -29,11 +33,12 @@ class _CFS:
         """
         if cls.fs and cls.fsa and not force: return
         from lazy.libz import Lib
-        from lazy import CloudAuthz
-        import importlib
+        from lazy.configz.cloudz import CloudAuthz
+        #import importlib
 
         _gcsfs: ModuleType = Lib.import_lib('gcsfs')
-        importlib.reload(gcsfs)
+        Lib.reload_module(gcsfs)
+        #importlib.reload(gcsfs)
 
         authz = CloudAuthz()
         if auth_config: authz.update_authz(**auth_config)
@@ -52,7 +57,8 @@ class _CFS:
         """ 
         Reinitializes the Filesystem
         """
-        global _pathz_gs_accessor, _PathzGSAccessor
+        #global _pathz_gs_accessor, _PathzGSAccessor
+        global _PathzGSAccessor
         cls.build_filesystems(force=True)
         _PathzGSAccessor = _create_accessor()
         _pathz_gs_accessor = _PathzGSAccessor()
@@ -63,21 +69,29 @@ class _PathzGSAccessor(NormalAccessor):
     # For type checking... annoying
     if _CFS.is_ready():
         info = staticmethod(_CFS.fs.info)
-        stat = _CFS.fs.stat
+        stat = staticmethod(_CFS.fs.stat)
         open = _CFS.fs.open
         listdir = _CFS.fs.ls
         exists = _CFS.fs.exists
         glob = _CFS.fs.glob
-        is_dir = _CFS.fs.isdir
+        is_dir = staticmethod(_CFS.fs.isdir)
         is_file = staticmethod(_CFS.fs.isfile)
         touch = _CFS.fs.touch
 
+        copy = _CFS.fs.copy
+        copy_file = staticmethod(_CFS.fs.cp_file)
+        get = _CFS.fs.get
+        get_file = staticmethod(_CFS.fs.get_file)
+        put = _CFS.fs.put
+        put_file = staticmethod(_CFS.fs.put_file)
+
+        invalidate_cache = _CFS.fs.invalidate_cache
+
         ukey = _CFS.fs.ukey
-        size = _CFS.fs.size
+        size = staticmethod(_CFS.fs.size)
         url = _CFS.fs.url
         modified = _CFS.fs.modified
-        metadata = _CFS.fs.metadata
-        invalidate_cache = _CFS.fs.invalidate_cache
+        metadata = staticmethod(_CFS.fs.info)
 
         mkdir = _CFS.fs.mkdir
         makedirs = _CFS.fs.makedirs
@@ -99,14 +113,22 @@ class _PathzGSAccessor(NormalAccessor):
         async_glob = _CFS.fsa.async_glob
         async_is_dir = _CFS.fsa.async_isdir
         async_is_file = _CFS.fsa.async_isfile
+        async_copy = _CFS.fsa.async_copy
+        async_copy_file = _CFS.fsa.async_cp_file
+        async_get = _CFS.fsa.async_get
+        async_get_file = _CFS.fsa.async_get_file
+        async_put = _CFS.fsa.async_put
+        async_put_file = _CFS.fsa.async_put_file
 
         async_touch = func_as_method_coro(_CFS.fs.touch)
         async_ukey = func_as_method_coro(_CFS.fs.ukey)
         async_size = func_as_method_coro(_CFS.fs.size)
         async_url = func_as_method_coro(_CFS.fs.url)
         async_modified = func_as_method_coro(_CFS.fs.modified)
-        async_metadata = func_as_method_coro(_CFS.fs.metadata)
+        async_metadata = _CFS.fsa.async_info
+
         async_invalidate_cache = func_as_method_coro(_CFS.fs.invalidate_cache)
+        #func_as_method_coro(_CFS.fs.metadata)
 
         async_open = _CFS.fsa._open
 
@@ -137,6 +159,13 @@ def _create_accessor():
         is_file = staticmethod(_CFS.fs.isfile)
         touch = _CFS.fs.touch
 
+        copy = _CFS.fs.copy
+        copy_file = staticmethod(_CFS.fs.cp_file)
+        get = _CFS.fs.get
+        get_file = staticmethod(_CFS.fs.get_file)
+        put = _CFS.fs.put
+        put_file = staticmethod(_CFS.fs.put_file)
+
         invalidate_cache = _CFS.fs.invalidate_cache
 
         ukey = _CFS.fs.ukey
@@ -165,6 +194,12 @@ def _create_accessor():
         async_glob = _CFS.fsa.async_glob
         async_is_dir = _CFS.fsa.async_isdir
         async_is_file = _CFS.fsa.async_isfile
+        async_copy = _CFS.fsa.async_copy
+        async_copy_file = _CFS.fsa.async_cp_file
+        async_get = _CFS.fsa.async_get
+        async_get_file = _CFS.fsa.async_get_file
+        async_put = _CFS.fsa.async_put
+        async_put_file = _CFS.fsa.async_put_file
 
         async_touch = func_as_method_coro(_CFS.fs.touch)
         async_ukey = func_as_method_coro(_CFS.fs.ukey)
@@ -1046,14 +1081,129 @@ class PathzGSPath(Path, PathzGSPurePath):
         to regular files).
         """
         return self._accessor.is_file(self._cloudpath)
-
-
+    
     async def async_is_file(self) -> bool:
         """
         Whether this path is a regular file (also True for symlinks pointing
         to regular files).
         """
         return await self._accessor.async_is_file(self._cloudpath)
+    
+    @staticmethod
+    def _get_pathlike(path: PathLike):
+        """
+        Returns the path of the file.
+        """
+        from lazy.io.pathz_v2 import get_path
+        return get_path(path)
+    
+    def copy(self, dest: PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False):
+        """
+        Copies the File to the Dir/File.
+        """
+        dest = self._get_pathlike(dest)
+        if dest.is_cloud:
+            return self._accessor.copy(self._cloudpath, dest._cloudpath, recursive = recursive)
+        return self._accessor.get(self._cloudpath, dest.string, recursive = recursive)
+    
+    async def async_copy(self, dest: PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False):
+        """
+        Copies the File to the Dir/File.
+        """
+        dest = self._get_pathlike(dest)
+        if dest.is_cloud:
+            return await self._accessor.async_copy(self._cloudpath, dest._cloudpath, recursive = recursive)
+        return await self._accessor.async_get(self._cloudpath, dest.string, recursive = recursive)
+
+    def copy_file(self, dest: PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False):
+        """
+        Copies this File to the the Dest Path
+        """
+        dest = self._get_pathlike(dest)
+        if dest.is_cloud:
+            return self._accessor.copy_file(self._cloudpath, dest._cloudpath, recursive = recursive)
+        return self._accessor.copy_file(self._cloudpath, dest.string, recursive = recursive)
+    
+    async def async_copy_file(self, dest: PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False):
+        """
+        Copies this File to the the Dest Path
+        """
+        dest = self._get_pathlike(dest)
+        if dest.is_cloud:
+            return await self._accessor.async_copy_file(self._cloudpath, dest._cloudpath, recursive = recursive)
+        return await self._accessor.async_copy_file(self._cloudpath, dest.string, recursive = recursive)
+
+    def put(self, src: PathLike, recursive: bool = False, callback: Optional[Callable] = None, **kwargs):
+        """
+        Copy file(s) from src to this FilePath
+        WIP support for cloud-to-cloud
+        """
+        src = self._get_pathlike(src)
+        assert not src.is_cloud, 'Cloud to Cloud support not supported at this time'
+        return self._accessor.put(src.string, self._cloudpath, recursive = recursive, callback = callback)
+    
+    async def async_put(self, src: PathLike, recursive: bool = False, callback: Optional[Callable] = None, **kwargs):
+        """
+        Copy file(s) from src to this FilePath
+        WIP support for cloud-to-cloud
+        """
+        src = self._get_pathlike(src)
+        assert not src.is_cloud, 'Cloud to Cloud support not supported at this time'
+        return await self._accessor.async_put(src.string, self._cloudpath, recursive = recursive, callback = callback)
+
+    def put_file(self, src: PathLike, callback: Optional[Callable] = None, **kwargs):
+        """
+        Copy single file to remote
+        WIP support for cloud-to-cloud
+        """
+        src = self._get_pathlike(src)
+        assert not src.is_cloud, 'Cloud to Cloud support not supported at this time'
+        return self._accessor.put_file(src.string, self._cloudpath, callback = callback)
+    
+    async def async_put_file(self, src: PathLike, callback: Optional[Callable] = None, **kwargs):
+        """
+        Copy single file to remote
+        WIP support for cloud-to-cloud
+        """
+        src = self._get_pathlike(src)
+        assert not src.is_cloud, 'Cloud to Cloud support not supported at this time'
+        return await self._accessor.async_put_file(src.string, self._cloudpath, callback = callback)
+    
+    def get(self, dest: PathLike, recursive: bool = False, callback: Optional[Callable] = None, **kwargs):
+        """
+        Copy the remote file(s) to dest (local)
+        WIP support for cloud-to-cloud
+        """
+        dest = self._get_pathlike(dest)
+        assert not dest.is_cloud, 'Cloud to Cloud support not supported at this time'
+        return self._accessor.get(self._cloudpath, dest.string, recursive = recursive, callback = callback)
+    
+    async def async_get(self, dest: PathLike, recursive: bool = False, callback: Optional[Callable] = None, **kwargs):
+        """
+        Copy the remote file(s) to dest (local)
+        WIP support for cloud-to-cloud
+        """
+        dest = self._get_pathlike(dest)
+        assert not dest.is_cloud, 'Cloud to Cloud support not supported at this time'
+        return await self._accessor.async_get(self._cloudpath, dest.string, recursive = recursive, callback = callback)
+
+    def get_file(self, dest: PathLike, callback: Optional[Callable] = None, **kwargs):
+        """
+        Copies this file to dest (local)
+        WIP support for cloud-to-cloud
+        """
+        dest = self._get_pathlike(dest)
+        assert not dest.is_cloud, 'Cloud to Cloud support not supported at this time'
+        return self._accessor.get_file(self._cloudpath, dest.string, callback = callback)
+    
+    async def async_get_file(self, dest: PathLike, callback: Optional[Callable] = None, **kwargs):
+        """
+        Copies this file to dest (local)
+        WIP support for cloud-to-cloud
+        """
+        dest = self._get_pathlike(dest)
+        assert not dest.is_cloud, 'Cloud to Cloud support not supported at this time'
+        return await self._accessor.async_get_file(self._cloudpath, dest.string, callback = callback)
         
 
     def is_mount(self) -> bool:
