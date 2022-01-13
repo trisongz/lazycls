@@ -8,14 +8,16 @@ from ..flavours import _async_sync_windows_flavour, _async_sync_posix_flavour
 if TYPE_CHECKING:
     try: from lazy.io.pathz_v2 import PathLike
     except ImportError: PathLike = type
+    CloudAuthz: object = None
+
     #from lazy.io.pathz_v2 import PathLike
 
 
 try: import gcsfs
 except ImportError: gcsfs: ModuleType = None
 
-try: from lazy.configz.cloudz import CloudAuthz
-except ImportError: CloudAuthz: object = None
+#try: from lazy.configz.cloudz import CloudAuthz
+#except ImportError: CloudAuthz: object = None
 
 
 class _CFS:
@@ -36,7 +38,7 @@ class _CFS:
         from lazy.configz.cloudz import CloudAuthz
         #import importlib
 
-        _gcsfs: ModuleType = Lib.import_lib('gcsfs')
+        gcsfs: ModuleType = Lib.import_lib('gcsfs')
         Lib.reload_module(gcsfs)
         #importlib.reload(gcsfs)
 
@@ -49,7 +51,7 @@ class _CFS:
         if authz.gcs_config: _config['config_kwargs'] = authz.gcs_config
 
         cls.fs = gcsfs.GCSFileSystem(asynchronous=False, **_config)
-        cls.fsa = rewrite_async_syntax(gcsfs.GCSFileSystem(asynchronous=True, consistency='size', **_config), 'gs')
+        cls.fsa = rewrite_async_syntax(gcsfs.GCSFileSystem(asynchronous=True, **_config), 'gs')
 
 
     @classmethod
@@ -72,7 +74,7 @@ class _PathzGSAccessor(NormalAccessor):
         stat = staticmethod(_CFS.fs.stat)
         open = _CFS.fs.open
         listdir = _CFS.fs.ls
-        exists = _CFS.fs.exists
+        exists = staticmethod(_CFS.fs.exists)
         glob = _CFS.fs.glob
         is_dir = staticmethod(_CFS.fs.isdir)
         is_file = staticmethod(_CFS.fs.isfile)
@@ -151,13 +153,13 @@ def _create_accessor():
         # Sync methods
         info = staticmethod(_CFS.fs.info)
         stat = staticmethod(_CFS.fs.stat)
-        open = _CFS.fs.open
+        open = staticmethod(_CFS.fs.open)
         listdir = _CFS.fs.ls
-        exists = _CFS.fs.exists
-        glob = _CFS.fs.glob
+        exists = staticmethod(_CFS.fs.exists)
+        glob = staticmethod(_CFS.fs.glob)
         is_dir = staticmethod(_CFS.fs.isdir)
         is_file = staticmethod(_CFS.fs.isfile)
-        touch = _CFS.fs.touch
+        touch = staticmethod(_CFS.fs.touch)
 
         copy = _CFS.fs.copy
         copy_file = staticmethod(_CFS.fs.cp_file)
@@ -175,7 +177,7 @@ def _create_accessor():
         metadata = staticmethod(_CFS.fs.info)
 
         mkdir = _CFS.fs.mkdir
-        makedirs = _CFS.fs.makedirs
+        makedirs = _CFS.fs.makedir
         unlink = _CFS.fs.rm_file
         rmdir = _CFS.fs.rmdir
 
@@ -214,6 +216,7 @@ def _create_accessor():
         async_open = _CFS.fsa._open
 
         async_mkdir = _CFS.fsa.async_mkdir
+        #async_makedirs = func_as_method_coro(_CFS.fs.makedir)
         async_makedirs = _CFS.fsa.async_makedirs
         async_unlink = _CFS.fsa.async_rm_file
         async_rmdir = _CFS.fsa.async_rmdir
@@ -549,6 +552,7 @@ class PathzGSPath(Path, PathzGSPurePath):
         Open the file pointed by this path and return a file object, as
         the built-in open() function does.
         """
+        #self.touch()
         return self._accessor.open(self._cloudpath, mode=mode, buffering=buffering, encoding=encoding, errors=errors, block_size=block_size, compression=compression, newline=newline, **kwargs)
     
     def async_writer(self, mode: FileMode = 'w', buffering: int = -1, encoding: Optional[str] = DEFAULT_ENCODING, errors: Optional[str] = ON_ERRORS, newline: Optional[str] = NEWLINE, block_size: int = 5242880, compression: str = 'infer', **kwargs: Any) -> IterableAIOFile:
@@ -556,6 +560,7 @@ class PathzGSPath(Path, PathzGSPurePath):
         Asyncronously Open the file pointed by this path and return a file object, as
         the built-in open() function does.
         """
+        #self.touch()
         return get_cloud_file(self._accessor.open(self._cloudpath, mode=mode, buffering=buffering, encoding=encoding, errors=errors, block_size=block_size, compression=compression, newline=newline, **kwargs))
 
     def read_text(self, encoding: str | None = DEFAULT_ENCODING, errors: str | None = ON_ERRORS) -> str:
@@ -638,7 +643,13 @@ class PathzGSPath(Path, PathzGSPurePath):
             # Avoid exception chaining
             except OSError: pass
             else: return
-        self._accessor.touch(self._cloudpath, truncate = truncate, data = data, **kwargs)
+        try:
+            self._accessor.touch(self._cloudpath, truncate = truncate, data = data, **kwargs)
+        except:
+            with self.open('wb') as f:
+                f.write(b'')
+                f.flush()
+
 
     async def async_touch(self, truncate: bool = True, data = None, exist_ok: bool = True, **kwargs):
         """
@@ -655,7 +666,7 @@ class PathzGSPath(Path, PathzGSPurePath):
         """
         Create a new directory at this given path.
         """
-        try: self._accessor.mkdir(self, mode)
+        try: self._accessor.mkdir(self._cloudpath, parents = parents, exist_ok = exist_ok)
 
         except FileNotFoundError:
             if not parents or self.parent == self: raise
@@ -675,8 +686,8 @@ class PathzGSPath(Path, PathzGSPurePath):
 
         except FileNotFoundError:
             if not parents or self.parent == self: raise
-            await self.parent.async_mkdir(create_parents=True, exist_ok=True)
-            await self.async_mkdir(create_parents=False, exist_ok=exist_ok)
+            await self.parent.async_mkdir(parents=True, exist_ok=True)
+            await self.async_mkdir(parents=False, exist_ok=exist_ok)
 
         except OSError:
             # Cannot rely on checking for EEXIST, since the operating system

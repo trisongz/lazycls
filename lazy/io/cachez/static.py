@@ -53,12 +53,14 @@ DEFAULT_SETTINGS = {
     u'statistics': 0,  # False
     u'tag_index': 0,  # False
     u'eviction_policy': u'least-recently-stored',
-    u'size_limit': 2 ** 30,  # 1gb
+    #u'size_limit': 2 ** 30,  # 1gb
+    u'size_limit': 2 ** 30 * 20,  # 20gb
     u'cull_limit': 10,
     u'sqlite_auto_vacuum': 1,  # FULL
     u'sqlite_cache_size': 2 ** 13,  # 8,192 pages
     u'sqlite_journal_mode': u'wal',
-    u'sqlite_mmap_size': 2 ** 26,  # 64mb
+    #u'sqlite_mmap_size': 2 ** 26,  # 64mb
+    u'sqlite_mmap_size': 536870912,  # 512mb
     u'sqlite_synchronous': 1,  # NORMAL
     u'disk_min_file_size': 2 ** 15,  # 32kb
     u'disk_pickle_protocol': dill.HIGHEST_PROTOCOL,

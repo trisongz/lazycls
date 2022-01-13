@@ -10,7 +10,6 @@ from .core import ConfigCls
 
 ### need to refactor later since there's circular dependencies
 ### with PathStr
-
 from .types import *
 from logz import get_logger
 logger = get_logger('cloudauthz')
@@ -18,8 +17,8 @@ logger = get_logger('cloudauthz')
 __all__ = ('CloudAuthz')
 
 class CloudAuthz(ConfigCls):
-    authz_dir: PathStr = "./authz"
-    boto_config: Optional[PathStr] = "~/.boto"
+    authz_dir: 'PathStr' = "./authz"
+    boto_config: Optional['PathStr'] = "~/.boto"
     
     """ 
     AWS Specific 
@@ -37,10 +36,10 @@ class CloudAuthz(ConfigCls):
     
     gcloud_project: str = ""
     google_cloud_project: str = ""
-    gauth: GoogleAuthBGZ = "" # Kept for compatability
-    gcp_auth: GoogleAuthJsonStr = ""
-    gcp_authb64: GoogleAuthB64 = ""
-    gcp_authbgz: GoogleAuthBGZ = ""
+    gauth: 'GoogleAuthBGZ' = "" # Kept for compatability
+    gcp_auth: 'GoogleAuthJsonStr' = ""
+    gcp_authb64: 'GoogleAuthB64' = ""
+    gcp_authbgz: 'GoogleAuthBGZ' = ""
 
     gcs_client_config: Optional[pyd.Json] = None
     gcs_config: Optional[pyd.Json] = None

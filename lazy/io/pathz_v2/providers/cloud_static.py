@@ -61,6 +61,7 @@ _ASYNC_MAPPING_GS = {
     "_list_buckets": "async_list_buckets",
     "_list_objects": "async_list_objects",
     "_ls": "async_ls",
+    #"_makedir": "async_makedir",
     "_makedirs": "async_makedirs",
     "_merge": "async_merge",
     "_mkdir": "async_mkdir",

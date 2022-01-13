@@ -5,7 +5,6 @@ from lazy.types import *
 from lazy.libz import Lib
 from lazy.serialize import Serialize
 
-
 __all__ = (
     'EnvType',
     'ListStr',
@@ -168,21 +167,26 @@ class YamlBGZStr(EnvType):
     @classmethod
     def cast(cls, v: str): return Serialize.YamlBGZ.loads(v)
 
-if TYPE_CHECKING:
-    try: from lazy.io.pathz_v2 import PathLike, PathzLike, get_path
-    except ImportError: 
-        PathLike: os.PathLike
-        PathzPath = Tuple[str, Type[pathlib.Path], Type[os.PathLike]]
+#if TYPE_CHECKING:
+#try: from lazy.io.pathz_v2 import PathLike, PathzLike, get_path
+#except ImportError: 
+PathLike = os.PathLike
+PathzPath = Tuple[str, Type[pathlib.Path], Type[os.PathLike]]
+PathzLike = Union[str, PathzPath]
+get_path: Type[Callable] = None
 
-    #try: from lazy.io.pathz_v2 import PathLike, PathzPath
-    #except ImportError: 
-    #    PathLike = os.PathLike
-    #    PathzPath = Tuple[str, Type[pathlib.Path], Type[os.PathLike]]
+
+#try: from lazy.io.pathz_v2 import PathLike, PathzPath
+#except ImportError: 
+#    PathLike = os.PathLike
+#    PathzPath = Tuple[str, Type[pathlib.Path], Type[os.PathLike]]
 
 
 def _get_pathio(p) -> 'PathzLike':
-    from lazy.io.pathz_v2.generic import get_path
-    return get_path(p)
+    #if get_path is None:
+    #from lazy.io.pathz_v2.generic import get_path
+    from lazy.io.pathz_v2.base import PathzPath
+    return PathzPath(p)
 
 """
 need to figure this out later. it's problematic. bc of type checking with CloudAuthz
@@ -205,7 +209,8 @@ class PathStr(EnvType):
         #p = get_path(v)
         p = _get_pathio(v)
         p.resolve()
-        p.mkdir(exist_ok=True, parents=True)
+        if p.is_dir():
+            p.mkdir(exist_ok=True, parents=True)
         return p
     
     @classmethod
@@ -221,7 +226,7 @@ class PathStr(EnvType):
             return val
         except Exception as e:
             #if not TYPE_CHECKING:
-            #print('Error from configtypes', e)
+            #print('Error from configtypes', cls.__name__, e)
             return ""
 
 

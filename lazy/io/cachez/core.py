@@ -49,7 +49,7 @@ def get_zlib():
 class Disk:
     "Cache key and value serialization for SQLite database and files."
 
-    def __init__(self, directory: str = None, database_name: str = None, min_file_size: int = 0, pickle_protocol: int = 0):
+    def __init__(self, directory: str = None, database_name: str = None, min_file_size: int = 0, pickle_protocol: int = 3):
         """Initialize disk instance.
         :param str directory: directory path
         :param str database_name: name prefix for cache file. will be prefixed to `-cache.db`
@@ -294,6 +294,126 @@ class JSONDisk(Disk):
         if not read:
             data = json.loads(zlib.decompress(data).decode('utf-8'))
         return data
+
+
+class CDisk(Disk):
+    "Cache key and value using with zlib compression."
+
+    def __init__(self, directory, database_name: str = None, compress_level: int = 3, **kwargs):
+        """Initialize JSON disk instance.
+        Keys and values are compressed using the zlib library. The
+        `compress_level` is an integer from 0 to 9 controlling the level of
+        compression; 1 is fastest and produces the least compression, 9 is
+        slowest and produces the most compression, and 0 is no compression.
+        :param str directory: directory path
+        :param int compress_level: zlib compression level (default 1)
+        :param kwargs: super class arguments
+        """
+        self.compress_level = compress_level
+        super().__init__(directory, database_name, **kwargs)
+
+    def put(self, key):
+        """Convert `key` to fields key and raw for Cache table.
+        :param key: key to convert
+        :return: (database key, raw boolean) pair
+        """
+        # pylint: disable=unidiomatic-typecheck
+        type_key = type(key)
+        if type_key is bytes: return sqlite3.Binary(key), True
+        if ((type_key is str) or (type_key is int and -9223372036854775808 <= key <= 9223372036854775807) or (type_key is float)):
+            return key, True
+        data = dill.dumps(key, protocol=self.pickle_protocol)
+        result = _zlib.compress(pickletools.optimize(data), self.compress_level)
+        return sqlite3.Binary(result), False
+
+    def get(self, key, raw):
+        """Convert fields `key` and `raw` from Cache table to key.
+        :param key: database key to convert
+        :param bool raw: flag indicating raw database storage
+        :return: corresponding Python key
+        """
+        # pylint: disable=no-self-use,unidiomatic-typecheck
+        if raw: return bytes(key) if type(key) is sqlite3.Binary else key
+        return dill.load(_zlib.decompress(io.BytesIO(key)))
+
+    def store(self, value, read, key=UNKNOWN):
+        """Convert `value` to fields size, mode, filename, and value for Cache
+        table.
+        :param value: value to convert
+        :param bool read: True when value is file-like object
+        :param key: key for item (default UNKNOWN)
+        :return: (size, mode, filename, value) tuple for Cache table
+        """
+        # pylint: disable=unidiomatic-typecheck
+        type_value = type(value)
+        min_file_size = self.min_file_size
+
+        if ((type_value is str and len(value) < min_file_size) or (type_value is int and -9223372036854775808 <= value <= 9223372036854775807) or (type_value is float)):
+            return 0, MODE_RAW, None, value
+        if type_value is bytes:
+            if len(value) < min_file_size: return 0, MODE_RAW, None, sqlite3.Binary(value)
+
+            filename, full_path = self.filename(key, value)
+            with open(full_path, 'xb') as writer:
+                writer.write(value)
+            return len(value), MODE_BINARY, filename, None
+        
+        if type_value is str:
+            filename, full_path = self.filename(key, value)
+            with open(full_path, 'x', encoding='UTF-8') as writer:
+                writer.write(value)
+
+            size = op.getsize(full_path)
+            return size, MODE_TEXT, filename, None
+        
+        if read:
+            size = 0
+            reader = ft.partial(value.read, 2 ** 22)
+            filename, full_path = self.filename(key, value)
+            with open(full_path, 'xb') as writer:
+                for chunk in iter(reader, b''):
+                    size += len(chunk)
+                    writer.write(chunk)
+
+            return size, MODE_BINARY, filename, None
+    
+        result = _zlib.compress(dill.dumps(value, protocol=self.pickle_protocol), self.compress_level)
+        if len(result) < min_file_size:
+            return 0, MODE_PICKLE, None, sqlite3.Binary(result)
+
+        filename, full_path = self.filename(key, value)
+        with open(full_path, 'xb') as writer:
+            writer.write(result)
+
+        return len(result), MODE_PICKLE, filename, None
+
+    def fetch(self, mode, filename, value, read):
+        """Convert fields `mode`, `filename`, and `value` from Cache table to
+        value.
+        :param int mode: value mode raw, binary, text, or pickle
+        :param str filename: filename of corresponding value
+        :param value: database value
+        :param bool read: when True, return an open file handle
+        :return: corresponding Python value
+        """
+        # pylint: disable=no-self-use,unidiomatic-typecheck
+        if mode == MODE_RAW: return bytes(value) if type(value) is sqlite3.Binary else value
+        if mode == MODE_BINARY:
+            if read:
+                return open(op.join(self._directory, filename), 'rb')
+            with open(op.join(self._directory, filename), 'rb') as reader:
+                return reader.read()
+        
+        if mode == MODE_TEXT:
+            full_path = op.join(self._directory, filename)
+            with open(full_path, 'r', encoding='UTF-8') as reader:
+                return reader.read()
+
+        if mode == MODE_PICKLE:
+            if value is None:
+                with open(op.join(self._directory, filename), 'rb') as reader:
+                    return dill.load(_zlib.decompress(reader))
+            return dill.load(_zlib.decompress(io.BytesIO(value)))
 
 
 class Timeout(Exception):

@@ -6,12 +6,13 @@ from ..flavours import _async_sync_windows_flavour, _async_sync_posix_flavour
 
 if TYPE_CHECKING:
     import datetime
+    CloudAuthz: object = None
 
 try: import s3fs
 except ImportError: s3fs: ModuleType = None
 
-try: from lazy.configz.cloudz import CloudAuthz
-except ImportError: CloudAuthz: object = None
+#try: from lazy.configz.cloudz import CloudAuthz
+#except ImportError: CloudAuthz: object = None
 
 """
 _s3_filesystem: 's3fs.S3FileSystem' = None
@@ -52,7 +53,7 @@ class _CFS:
         from lazy.configz.cloudz import CloudAuthz
         #import importlib
 
-        _s3fs: ModuleType = Lib.import_lib('s3fs')
+        s3fs = Lib.import_lib('s3fs')
         Lib.reload_module(s3fs)
         #importlib.reload(s3fs)
 
@@ -159,15 +160,15 @@ class _PathzS3Accessor(NormalAccessor):
 def _create_accessor():
     class _PathzS3Accessor(NormalAccessor):
         # Sync methods
-        info = _CFS.fs.info
-        stat = _CFS.fs.stat
+        info = staticmethod(_CFS.fs.info)
+        stat = staticmethod(_CFS.fs.stat)
         open = _CFS.fs.open
         listdir = _CFS.fs.ls
-        exists = _CFS.fs.exists
-        glob = _CFS.fs.glob
-        is_dir = _CFS.fs.isdir
-        is_file = _CFS.fs.isfile
-        touch = _CFS.fs.touch
+        exists = staticmethod(_CFS.fs.exists)
+        glob = staticmethod(_CFS.fs.glob)
+        is_dir = staticmethod(_CFS.fs.isdir)
+        is_file = staticmethod(_CFS.fs.isfile)
+        touch = staticmethod(_CFS.fs.touch)
 
         copy = _CFS.fs.copy
         copy_file = staticmethod(_CFS.fs.cp_file)
@@ -658,7 +659,7 @@ class PathzS3Path(Path, PathzS3PurePath):
         """
         Create a new directory at this given path.
         """
-        try: self._accessor.mkdir(self, mode)
+        try: self._accessor.mkdir(self._cloudpath, mode)
 
         except FileNotFoundError:
             if not parents or self.parent == self: raise

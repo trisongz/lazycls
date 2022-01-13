@@ -1167,7 +1167,7 @@ class PathzPath(Path, PathzPurePath):
         Writes JSON to File
         """
         with self.open('w', encoding = encoding) as f:
-            f.write(Serialize.Json.dumps(data, ensure_ascii=ensure_ascii, indent=indent, **kwargs))
+            f.write(Serialize.SimdJson.dumps(data, ensure_ascii=ensure_ascii, indent=indent, **kwargs))
     
     def write_jsonlines(self, data: List[JsonType], append: bool = False, encoding: Optional[str] = DEFAULT_ENCODING, newline: str = '\n', ignore_errors: bool = True, ensure_file_exists: bool = True, flush_every: int = 0, log_errors: bool = False, **kwargs):
         """
@@ -1234,7 +1234,7 @@ class PathzPath(Path, PathzPurePath):
         Writes JSON to File Asyncronously
         """
         async with self.async_open('w', encoding = encoding) as f:
-            await f.write(await Serialize.Json.async_dumps(data, ensure_ascii=ensure_ascii, indent=indent, **kwargs))
+            await f.write(await Serialize.SimdJson.async_dumps(data, ensure_ascii=ensure_ascii, indent=indent, **kwargs))
     
     async def async_write_jsonlines(self, data: List[JsonType], append: bool = False, encoding: Optional[str] = DEFAULT_ENCODING, newline: str = '\n', ignore_errors: bool = True, ensure_file_exists: bool = True, flush_every: int = 0, log_errors: bool = False, **kwargs):
         """

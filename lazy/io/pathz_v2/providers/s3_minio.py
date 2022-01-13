@@ -5,12 +5,13 @@ from ..flavours import _async_sync_windows_flavour, _async_sync_posix_flavour
 
 if TYPE_CHECKING:
     import datetime
+    CloudAuthz: object = None
 
 try: import s3fs
 except ImportError: s3fs: ModuleType = None
 
-try: from lazy.configz.cloudz import CloudAuthz
-except ImportError: CloudAuthz: object = None
+#try: from lazy.configz.cloudz import CloudAuthz
+#except ImportError: CloudAuthz: object = None
 
 
 class _CFS:
@@ -31,7 +32,7 @@ class _CFS:
         from lazy.configz.cloudz import CloudAuthz
         #import importlib
 
-        _s3fs: ModuleType = Lib.import_lib('s3fs')
+        s3fs: ModuleType = Lib.import_lib('s3fs')
         Lib.reload_module(s3fs)
         #importlib.reload(s3fs)
 

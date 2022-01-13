@@ -15,7 +15,7 @@ class Serialize:
     YamlBGZ: YamlBGZ = YamlBGZ
     Base: Base = Base
     Secret: Secret = Secret
-    Pkl: BasePickle = Pkl
+    Pkl: BasePickle = Dill
     Compress = Compression
     SimdJson: SimdJson = SimdJson
     OrJson: OrJson = OrJson
