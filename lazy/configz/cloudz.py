@@ -112,7 +112,7 @@ class CloudAuthz(ConfigCls):
         if self.gcp_auth: export(GOOGLE_APPLICATION_CREDENTIALS=self.gcp_auth)
         elif self.gauth: export(GOOGLE_APPLICATION_CREDENTIALS=self.gauth)
 
-        if self.gcloud_project: export(GOOGLE_CLOUD_PROJECT=self.gcloud_project or self.google_cloud_project)
+        if self.gcloud_project or self.google_cloud_project: export(GOOGLE_CLOUD_PROJECT=self.gcloud_project or self.google_cloud_project)
         try:
             botopath = self.get_boto_path()
             ## We know this is our custom botofile
