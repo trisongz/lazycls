@@ -113,11 +113,13 @@ class CloudAuthz(ConfigCls):
         elif self.gauth: export(GOOGLE_APPLICATION_CREDENTIALS=self.gauth)
 
         if self.gcloud_project: export(GOOGLE_CLOUD_PROJECT=self.gcloud_project or self.google_cloud_project)
-        botopath = self.get_boto_path()
-        ## We know this is our custom botofile
-        if botopath.exists() and self.should_write_boto():
-            export(BOTO_PATH=botopath.as_posix())
-            export(BOTO_CONFIG=botopath.as_posix())
+        try:
+            botopath = self.get_boto_path()
+            ## We know this is our custom botofile
+            if botopath.exists() and self.should_write_boto():
+                export(BOTO_PATH=botopath.as_posix())
+                export(BOTO_CONFIG=botopath.as_posix())
+        except: pass
         if self.aws_access_key_id:
             export(AWS_ACCESS_KEY_ID=self.aws_access_key_id)
             export(AWS_SECRET_ACCESS_KEY=self.aws_secret_access_key)
