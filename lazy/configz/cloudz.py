@@ -16,8 +16,14 @@ logger = get_logger('cloudauthz')
 
 __all__ = ('CloudAuthz')
 
+try: 
+    from google import drive
+    _colab = True
+
+except ImportError: _colab = False
+
 class CloudAuthz(ConfigCls):
-    authz_dir: 'PathStr' = "./authz"
+    authz_dir: Optional['PathStr'] = "~/.authz"
     boto_config: Optional['PathStr'] = "~/.boto"
     
     """ 
@@ -68,7 +74,10 @@ class CloudAuthz(ConfigCls):
 
     def get_boto_path(self):
         if self.boto_config and self.boto_config.exists(): return self.boto_config
-        if not self.authz_dir.exist: self.authz_dir.mkdir(create_parents=True, exist_ok=True)
+        if not self.authz_dir:
+            from lazy.io import get_path
+            self.authz_dir = get_path('/content/authz') if _colab else get_path('~/.authz')
+        if not self.authz_dir.exists(): self.authz_dir.mkdir(create_parents=True, exist_ok=True)
         return self.authz_dir.joinpath('.boto')
     
     def should_write_boto(self):
@@ -79,9 +88,11 @@ class CloudAuthz(ConfigCls):
         if self.aws_access_key_id:
             t += f"aws_access_key_id = {self.aws_access_key_id}\n"
             t += f"aws_secret_access_key = {self.aws_secret_access_key}\n"
-        if self.gauth and self.gauth.to_env_path.exists():
+        #if self.gauth and self.gauth.to_env_path.exists():
+        if self.gauth:
             t += f"gs_service_key_file = {self.gauth}\n"
-        elif self.gcp_auth and self.gcp_auth.to_env_path.exists():
+        #elif self.gcp_auth and self.gcp_auth.to_env_path.exists():
+        elif self.gcp_auth:
             t += f"gs_service_key_file = {self.gcp_auth}\n"
         t += "\n[Boto]\n"
         t += "https_validate_certificates = True\n"
