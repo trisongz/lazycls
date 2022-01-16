@@ -28,6 +28,12 @@ from types import ModuleType
 
 if TYPE_CHECKING:
     from lazy.io.pathz_v2 import PathzPath, PathzLike, PathLike
+try:
+    from google import drive
+    import pickle5 as dill
+    _colab = True
+except ImportError:
+    _colab = False
 
 _zlib = zlib
 _isal_attempted: bool = False

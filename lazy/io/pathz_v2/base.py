@@ -252,6 +252,8 @@ class PathzPath(Path, PathzPurePath):
         the built-in open() function does.
         """
         if self._closed: self._raise_closed()
+        if 'b' in mode:
+            return io.open(self, mode = mode, buffering = buffering, opener=self._opener)
         return io.open(self, mode, buffering, encoding, errors, newline, opener=self._opener)
 
     
@@ -260,6 +262,8 @@ class PathzPath(Path, PathzPurePath):
         Asyncronously Open the file pointed by this path and return a file object, as
         the built-in open() function does.
         """
+        if 'b' in mode:
+            return get_handle(self._path, mode = mode, buffering = buffering)
         return get_handle(self._path, mode, encoding=encoding, errors=errors, newline=newline)
     
     def reader(self, mode: FileMode = 'r', buffering: int = -1, encoding: Optional[str] = DEFAULT_ENCODING, errors: Optional[str] = ON_ERRORS, newline: Optional[str] = NEWLINE, **kwargs) -> IO[Union[str, bytes]]:
