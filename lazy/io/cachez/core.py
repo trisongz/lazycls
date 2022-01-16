@@ -29,7 +29,7 @@ from types import ModuleType
 if TYPE_CHECKING:
     from lazy.io.pathz_v2 import PathzPath, PathzLike, PathLike
 try:
-    from google import drive
+    from google.colab import drive
     import pickle5 as dill
     _colab = True
 except ImportError:
