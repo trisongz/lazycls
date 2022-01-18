@@ -11,8 +11,10 @@ from .core import SerializerB
 # If isal is available, use it over defaults
 try:
     import isal
-    _gzip = isal.igzip
-    _zlib = isal.isal_zlib
+    from isal import igzip as _gzip
+    from isal import isal_zlib as _zlib
+    #_gzip = isal.igzip_lib
+    #_zlib = isal.isal_zlib
 except ImportError: pass
 
 if sys.version_info.minor < 8:
