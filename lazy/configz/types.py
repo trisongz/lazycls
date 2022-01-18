@@ -3,7 +3,7 @@ import pathlib
 from pydantic.types import *
 from lazy.types import *
 from lazy.libz import Lib
-from lazy.serialize import Serialize
+#from lazy.serialize import Serialize
 
 __all__ = (
     'EnvType',
@@ -13,6 +13,7 @@ __all__ = (
     'Base64Gzip',
     'YamlStr',
     'PathStr',
+    'AuthzDir',
     'JsonB64Str',
     'JsonB64GZipStr',
     'AuthzFileStr',
@@ -125,14 +126,18 @@ class Base64(EnvType):
     Returns Base64 Encoded Strings
     """
     @classmethod
-    def cast(cls, v: str): return Serialize.Base.b64_decode(v)
+    def cast(cls, v: str): 
+        from lazy.serialize import Serialize
+        return Serialize.Base.b64_decode(v)
 
 class Base64Gzip(EnvType):
     """
     Returns Base64 + Gzip Encoded Strings
     """
     @classmethod
-    def cast(cls, v: str): return Serialize.Base.b64_gzip_decode(v)
+    def cast(cls, v: str): 
+        from lazy.serialize import Serialize
+        return Serialize.Base.b64_gzip_decode(v)
 
 
 class YamlStr(EnvType):
@@ -143,7 +148,9 @@ class YamlStr(EnvType):
     def default_value(cls): return {}
     
     @classmethod
-    def cast(cls, v: str): return Serialize.Yaml.loads(v)
+    def cast(cls, v: str): 
+        from lazy.serialize import Serialize
+        return Serialize.Yaml.loads(v)
 
 
 class YamlB64Str(EnvType):
@@ -154,7 +161,9 @@ class YamlB64Str(EnvType):
     def default_value(cls): return {}
     
     @classmethod
-    def cast(cls, v: str): return Serialize.YamlB64.loads(v)
+    def cast(cls, v: str): 
+        from lazy.serialize import Serialize
+        return Serialize.YamlB64.loads(v)
 
 
 class YamlBGZStr(EnvType):
@@ -165,7 +174,9 @@ class YamlBGZStr(EnvType):
     def default_value(cls): return {}
     
     @classmethod
-    def cast(cls, v: str): return Serialize.YamlBGZ.loads(v)
+    def cast(cls, v: str): 
+        from lazy.serialize import Serialize
+        return Serialize.YamlBGZ.loads(v)
 
 #if TYPE_CHECKING:
 #try: from lazy.io.pathz_v2 import PathLike, PathzLike, get_path
@@ -193,6 +204,73 @@ need to figure this out later. it's problematic. bc of type checking with CloudA
 """
 
 class PathStr(EnvType):
+    """
+    Returns lazy.io.get_path(str)
+    """
+    @classproperty
+    def default_value(cls): return None
+    
+
+    @classmethod
+    def cast(cls, v: str) -> 'PathLike':
+        if '~' in v: v = v.replace('~', os.path.expanduser('~'))
+        p = pathlib.Path(v)
+        if p.is_dir(): p.mkdir(exist_ok=True, parents=True)
+        return p
+    
+    @classmethod
+    def validate(cls, v):
+        if v is None: return cls.get_default_value()
+        if not v: return cls.get_to_env_value()
+        try: 
+            val = cls.cast(v)
+            if cls.to_env_key:
+                to_val = cls.cast_to_env(val)
+                cls.set_to_env(to_val)
+                return to_val
+            return val
+        except Exception as e:
+            #if not TYPE_CHECKING:
+            #print('Error from configtypes', cls.__name__, e)
+            return ""
+
+
+class AuthzDir(EnvType):
+    
+    @classproperty
+    def default_value(cls) -> 'PathLike':
+        if Lib.is_avail_colab: pathlib.Path('/content/authz')
+        if pathlib.Path('~/.authz').exists(): return pathlib.Path('~/.authz')
+        return pathlib.Path.cwd().joinpath('.authz')
+
+    @classmethod
+    def cast(cls, v: str) -> 'PathLike':
+        if '~' in v: v = v.replace('~', os.path.expanduser('~'))
+        p = pathlib.Path(v)
+        if p.is_dir(): p.mkdir(exist_ok=True, parents=True)
+        return p
+    
+
+    @classmethod
+    def validate(cls, v):
+        if v is None: 
+            v = cls.get_default_value()
+            v.mkdir(exist_ok=True, parents=True)
+            return v
+        if not v: return cls.get_to_env_value()
+        try: 
+            val = cls.cast(v)
+            if cls.to_env_key:
+                to_val = cls.cast_to_env(val)
+                cls.set_to_env(to_val)
+                return to_val
+            return val
+        except Exception as e:
+            return cls.get_default_value()
+
+
+
+class _PathStr(EnvType):
     """
     Returns lazy.io.get_path(str)
     """
@@ -239,6 +317,7 @@ class JsonB64Str(EnvType):
     
     @classmethod
     def cast(cls, v: str): 
+        from lazy.serialize import Serialize
         return Serialize.JsonB64.loads(v)
         #return Serialize.Json.loads(Serialize.Base.b64_decode(v))
 
@@ -251,6 +330,7 @@ class JsonB64GZipStr(EnvType):
     
     @classmethod
     def cast(cls, v: str): 
+        from lazy.serialize import Serialize
         return Serialize.JsonBGZ.loads(v)
         #return Serialize.Json.loads(Serialize.Base.b64_gzip_decode(v))
 
@@ -268,8 +348,8 @@ class AuthzFileStr(EnvType):
     
     @classproperty
     def to_env_path(cls) -> 'PathLike':
-        if Lib.is_avail_colab: return _get_pathio('/authz/auth_file.txt')
-        return _get_pathio(pathlib.Path.cwd().joinpath('authz', 'auth_file.txt').as_posix())
+        if Lib.is_avail_colab: return pathlib.Path('/content/authz/auth_file.txt')
+        return pathlib.Path(pathlib.Path.cwd().joinpath('authz', 'auth_file.txt').as_posix())
     
     @classmethod
     def dump_decoded(cls, v): return v
@@ -283,7 +363,7 @@ class AuthzFileStr(EnvType):
     @classmethod
     def cast_to_env(cls, v):
         cur_env_val = cls.get_to_env_value()
-        if cur_env_val and _get_pathio(cur_env_val).exists() and not cls.override_env_to_value: return cur_env_val
+        if cur_env_val and pathlib.Path(cur_env_val).exists() and not cls.override_env_to_value: return cur_env_val
         data = cls.dump_decoded(v)
         if data: return cls.write_to_file(data)
         return cur_env_val
@@ -320,15 +400,19 @@ class GoogleAuthJsonStr(AuthzFileStr):
     
     @classproperty
     def to_env_path(cls):
-        if Lib.is_avail_colab: return _get_pathio('/authz/adc.json')
-        return _get_pathio(pathlib.Path.cwd().joinpath('authz', 'adc.json').as_posix())
+        if Lib.is_avail_colab: return pathlib.Path('/content/authz/adc.json')
+        return pathlib.Path(pathlib.Path.cwd().joinpath('authz', 'adc.json').as_posix())
     
     
     @classmethod
-    def cast(cls, v: str): return Serialize.Json.loads(v)
+    def cast(cls, v: str): 
+        from lazy.serialize import Serialize
+        return Serialize.Json.loads(v)
     
     @classmethod
-    def dump_decoded(cls, v): return Serialize.Json.dumps(v)
+    def dump_decoded(cls, v): 
+        from lazy.serialize import Serialize
+        return Serialize.Json.dumps(v)
 
 class GoogleAuth(GoogleAuthJsonStr):
     """
@@ -345,7 +429,9 @@ class GoogleAuthB64(GoogleAuthJsonStr):
     #def cast(cls, v: str): return Serialize.Json.loads(Serialize.Base.b64_decode(v))
 
     @classmethod
-    def cast(cls, v: str): return Serialize.JsonB64.loads(v)
+    def cast(cls, v: str): 
+        from lazy.serialize import Serialize
+        return Serialize.JsonB64.loads(v)
     
 class GoogleAuthBGZ(GoogleAuthJsonStr):
     """
@@ -356,4 +442,6 @@ class GoogleAuthBGZ(GoogleAuthJsonStr):
     #def cast(cls, v: str): return Serialize.Json.loads(Serialize.Base.b64_gzip_decode(v))
     
     @classmethod
-    def cast(cls, v: str): return Serialize.JsonBGZ.loads(v)
+    def cast(cls, v: str): 
+        from lazy.serialize import Serialize
+        return Serialize.JsonBGZ.loads(v)

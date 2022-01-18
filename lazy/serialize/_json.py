@@ -1,6 +1,6 @@
 
 import orjson as _orjson
-
+import json as defaultjson
 from os import PathLike
 from pydantic import BaseModel
 from typing import Dict, Any, List, Union, overload
@@ -322,6 +322,24 @@ class SimdJson(JsonBase):
         if cls.parser_enabled: return create_simdobj(cls.parser.parse(data, *args, **kwargs))
         return _simdjson.loads(data, *args, **kwargs)
 
+
+class DefaultJson(JsonBase):
+    
+    @classmethod
+    def _encode(cls, obj: Dict[Any, Any], *args, default: Dict[Any, Any] = None, **kwargs) -> str:
+        return defaultjson.dumps(obj, default=default, *args, **kwargs)
+    
+    @classmethod
+    def _decode(cls, data: Union[str, bytes], *args, **kwargs) -> Union[Dict[Any, Any], List[str]]:
+        return defaultjson.loads(data, *args, **kwargs)
+    
+    @classmethod
+    async def _async_encode(cls, obj: Dict[Any, Any], *args, default: Dict[Any, Any] = None, **kwargs) -> str:
+        return defaultjson.dumps(obj, default=default, *args, **kwargs)
+    
+    @classmethod
+    async def _async_decode(cls, data: Union[str, bytes], *args, **kwargs) -> Union[Dict[Any, Any], List[str]]:
+        return defaultjson.loads(data, *args, **kwargs)
 
 
 class Json(JsonBase):

@@ -15,6 +15,10 @@ _root_path = pathlib.Path(__file__).parent
 _scriptz_path = _root_path.joinpath('scriptz')
 _bash_scriptz_path = _scriptz_path.joinpath('bash')
 
+try:
+    from google.colab import drive
+    _is_colab = True
+except ImportError: _is_colab = False
 
 def get_variable_separator():
     """
@@ -72,6 +76,7 @@ class LibType(type):
         
     def is_available(cls, library: str) -> bool:
         """ Checks whether a Python Library is available."""
+        if library == 'colab': return _is_colab
         try:
             _ = pkg_resources.get_distribution(library)
             return True

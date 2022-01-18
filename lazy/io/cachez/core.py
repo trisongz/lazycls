@@ -2,7 +2,7 @@
 """ 
 Source: https://github.com/grantjenks/python-diskcache/blob/71db7753610bcd4bd7adda28abeb2b0fdebbc31f/diskcache/core.py
 """
-
+import sys
 import codecs
 import contextlib as cl
 import errno
@@ -28,25 +28,26 @@ from types import ModuleType
 
 if TYPE_CHECKING:
     from lazy.io.pathz_v2 import PathzPath, PathzLike, PathLike
-try:
-    from google.colab import drive
-    import pickle5 as dill
-    _colab = True
-except ImportError:
-    _colab = False
+
+from lazy.libz import Lib
+
+# Serialization for highest protocol requires 3.8.
+# will fallback to pickle5
+
+_requires_pickle5 = bool(sys.version_info.minor < 8)
 
 _zlib = zlib
 _isal_attempted: bool = False
 
-def get_zlib():
-    global _zlib, _isal_attempted
+def setup_libz():
+    global _zlib, _isal_attempted, dill
+    if _requires_pickle5:
+        dill = Lib.import_lib('pickle5')
     if _isal_attempted: return
-    from lazy.libz import Lib
     try:
         _isal = Lib.import_lib('isal')
-        _zlib = _isal.isal_zlib #import_module('isal_zlib', 'isal')
+        _zlib = _isal.isal_zlib
     except Exception as e: 
-        #print(e)
         pass
     _isal_attempted = True
 
@@ -62,7 +63,7 @@ class Disk:
         :param int min_file_size: minimum size for file use
         :param int pickle_protocol: pickle protocol for serialization
         """
-        get_zlib()
+        setup_libz()
         self._directory = directory
         self._db_name = database_name
         self.min_file_size = min_file_size

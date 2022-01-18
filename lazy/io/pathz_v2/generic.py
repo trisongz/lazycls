@@ -1,14 +1,9 @@
 import os
 import pathlib
-
-
-
 from .base import *
-#from .providers import *
-
+from .providers.gs_gcp import *
 from .providers.s3_aws import *
 from .providers.s3_minio import *
-from .providers.gs_gcp import *
 
 from typing import List, Dict, Union, Type, Tuple
 
@@ -31,6 +26,8 @@ PathzLike = Union[
     Type[PathzS3WindowsPath],
     Type[PathzS3PosixPath],
     Type[PurePathzS3WindowsPath],
+    Type[PathzMinioPurePath], Type[PathzMinioPath], Type[PurePathzMinioPosixPath], Type[PathzMinioWindowsPath], Type[PathzMinioPosixPath], Type[PurePathzMinioWindowsPath]
+
 ]
 
 _PATHLIKE_CLS: Tuple[PathzLike, ...] = (
@@ -52,11 +49,13 @@ _PATHLIKE_CLS: Tuple[PathzLike, ...] = (
     PathzS3WindowsPath,
     PathzS3PosixPath,
     PurePathzS3WindowsPath,
+    PathzMinioPurePath, PathzMinioPath, PurePathzMinioPosixPath, PathzMinioWindowsPath, PathzMinioPosixPath, PurePathzMinioWindowsPath
 )
 
 FileSysLike = Union[
     Type[AWSFileSystem],
-    Type[GCPFileSystem]
+    Type[GCPFileSystem],
+    Type[MinioFileSystem],
 ]
 
 PathLike = Union[str, os.PathLike, PathzLike]
@@ -64,6 +63,7 @@ PathLike = Union[str, os.PathLike, PathzLike]
 _PREFIXES_TO_CLS: Dict[str, PathzLike] = {
     'gs://': PathzGSPath,
     's3://': PathzS3Path,
+    'minio://': PathzMinioPath,
     #'minio://': cloud.PosixMinioPath,
     #'s3compat://': cloud.PosixS3CompatPath,
 }
@@ -133,4 +133,4 @@ def get_lazydir(mkdir: bool = False):
 to_path = get_path
 __all__ = (
     'get_path', 'as_path', 'PathLike', 'PathzPath', 'PathzS3Path', 'PathzGSPath', 'PathzLike', 'get_lazydir',
-    )
+)

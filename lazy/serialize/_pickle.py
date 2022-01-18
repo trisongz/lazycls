@@ -1,3 +1,4 @@
+import sys
 import gzip as _gzip
 import zlib as _zlib
 import bz2 as _bz2
@@ -7,6 +8,17 @@ import dill as _dill
 from typing import Any
 from .core import SerializerB
 
+# If isal is available, use it over defaults
+try:
+    import isal
+    _gzip = isal.igzip
+    _zlib = isal.isal_zlib
+except ImportError: pass
+
+if sys.version_info.minor < 8:
+    try:
+        import pickle5 as _pickle
+    except ImportError: pass
 
 class DefaultProtocols:
     default: int = 4

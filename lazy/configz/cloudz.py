@@ -3,6 +3,7 @@
 """
 Cloud Provider Configs
 """
+import pathlib
 from typing import Optional, TYPE_CHECKING
 
 from lazy.types import pyd
@@ -16,14 +17,13 @@ logger = get_logger('cloudauthz')
 
 __all__ = ('CloudAuthz')
 
-try: 
-    from google import drive
-    _colab = True
-
-except ImportError: _colab = False
+try:
+    from google.colab import drive
+    _is_colab = True
+except ImportError: _is_colab = False
 
 class CloudAuthz(ConfigCls):
-    authz_dir: Optional['PathStr'] = "~/.authz"
+    authz_dir: Optional['AuthzDir'] = "~/.authz"
     boto_config: Optional['PathStr'] = "~/.boto"
     
     """ 
@@ -39,9 +39,11 @@ class CloudAuthz(ConfigCls):
     """ 
     GCP Specific 
     """
-    
+
+    gcp_project: str = ""
     gcloud_project: str = ""
     google_cloud_project: str = ""
+    
     gauth: 'GoogleAuthBGZ' = "" # Kept for compatability
     gcp_auth: 'GoogleAuthJsonStr' = ""
     gcp_authb64: 'GoogleAuthB64' = ""
@@ -69,38 +71,58 @@ class CloudAuthz(ConfigCls):
     s3compat_access_token: Optional[str] = ""
     s3compat_config: Optional[pyd.Json] = None
 
+    def get_gcp_project(self):
+        for v in [self.gcp_project, self.gcloud_project, self.google_cloud_project]:
+            if v: return v
+
+    def get_gcp_auth(self):
+        for v in [self.gauth, self.gcp_auth, self.gcp_authb64, self.gcp_authbgz]:
+            if v: 
+                if isinstance(v, str): v = pathlib.Path(v)
+                if v.exists(): return v
+
+    def get_authz_path(self):
+        if not self.authz_dir:
+            self.authz_dir = pathlib.Path('/content/authz') if _is_colab else pathlib.Path('~/.authz').resolve(True)
+        return self.authz_dir
+
+    def get_boto_config_path(self):
+        if not self.boto_config:
+            self.boto_config = pathlib.Path('/root/.boto') if _is_colab else pathlib.Path('~/.boto').resolve(True)
+        return self.boto_config
+
+
     def get_s3_endpoint(self):
         return f'https://s3.{self.aws_region}.amazonaws.com'
 
     def get_boto_path(self):
-        if self.boto_config and self.boto_config.exists(): return self.boto_config
-        if not self.authz_dir:
-            from lazy.io import get_path
-            self.authz_dir = get_path('/content/authz') if _colab else get_path('~/.authz')
-        if not self.authz_dir.exists(): self.authz_dir.mkdir(create_parents=True, exist_ok=True)
-        return self.authz_dir.joinpath('.boto')
+        boto_config = self.get_boto_config_path()
+        if boto_config.exists(): return boto_config
+        authz_dir = self.get_authz_path()
+        authz_dir.mkdir(create_parents=True, exist_ok=True)
+        return authz_dir.joinpath('.boto')
     
     def should_write_boto(self):
-        return not bool(self.boto_config and self.boto_config.exists())
-    
+        boto_config = self.get_boto_config_path()
+        return not boto_config.exists()
+ 
     def get_boto_values(self):
         t = "[Credentials]\n"
         if self.aws_access_key_id:
             t += f"aws_access_key_id = {self.aws_access_key_id}\n"
             t += f"aws_secret_access_key = {self.aws_secret_access_key}\n"
         #if self.gauth and self.gauth.to_env_path.exists():
-        if self.gauth:
-            t += f"gs_service_key_file = {self.gauth}\n"
-        #elif self.gcp_auth and self.gcp_auth.to_env_path.exists():
-        elif self.gcp_auth:
-            t += f"gs_service_key_file = {self.gcp_auth}\n"
+        gcp_auth = self.get_gcp_auth()
+        if gcp_auth.exists():
+            t += f"gs_service_key_file = {gcp_auth.as_posix()}\n"
         t += "\n[Boto]\n"
         t += "https_validate_certificates = True\n"
         t += "\n[GSUtil]\n"
         t += "content_language = en\n"
         t += "default_api_version = 2\n"
-        if self.gcloud_project or self.google_cloud_project:
-            t += f"default_project_id = {self.gcloud_project or self.google_cloud_project}\n"
+        gcp_project = self.get_gcp_project()
+        if gcp_project:
+            t += f"default_project_id = {gcp_project}\n"
         return t
 
 
@@ -120,10 +142,11 @@ class CloudAuthz(ConfigCls):
 
     def set_authz_env(self):
         from lazy.cmd.contrib import export
-        if self.gcp_auth: export(GOOGLE_APPLICATION_CREDENTIALS=self.gcp_auth)
-        elif self.gauth: export(GOOGLE_APPLICATION_CREDENTIALS=self.gauth)
+        gcp_auth = self.get_gcp_auth()
+        if gcp_auth and gcp_auth.exists(): export(GOOGLE_APPLICATION_CREDENTIALS=gcp_auth)
+        gcp_project = self.get_gcp_project()
+        if gcp_project: export(GOOGLE_CLOUD_PROJECT=gcp_project)
 
-        if self.gcloud_project or self.google_cloud_project: export(GOOGLE_CLOUD_PROJECT=self.gcloud_project or self.google_cloud_project)
         try:
             botopath = self.get_boto_path()
             ## We know this is our custom botofile
