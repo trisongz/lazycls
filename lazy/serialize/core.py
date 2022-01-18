@@ -1,6 +1,6 @@
 __all__ = (
-    'Serializer',
-    'SerializerB',
+    'SerializerCls',
+    'SerializerClsB',
     'Mode'
 )
 
@@ -10,7 +10,7 @@ from .static import Mode, Defaults
 
 logger = get_logger('serialize')
 
-class Serializer:
+class SerializerCls:
     encoding: str = 'utf-8'
     binary: bool = False
     read_mode: str = Mode.read
@@ -63,7 +63,7 @@ class Serializer:
         if not cls.async_supported: raise Exception
         return await cls._async_decode(obj, *args, **kwargs)
     
-class SerializerB(Serializer):
+class SerializerClsB(SerializerCls):
     encoding: str = None
     binary: bool = True
     read_mode: str = Mode.read_binary

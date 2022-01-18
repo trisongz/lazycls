@@ -1,10 +1,10 @@
 import yaml
 
 from typing import Dict, Any, List, Union, overload
-from .core import Serializer, Mode, Defaults
+from .core import SerializerCls, Mode, Defaults
 
 
-class Yaml(Serializer):
+class Yaml(SerializerCls):
     default_value: Dict[Any, Any] = None
     async_supported: bool = True
     cloud_supported: bool = True

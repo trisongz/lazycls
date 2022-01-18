@@ -4,11 +4,11 @@ import json as defaultjson
 from os import PathLike
 from pydantic import BaseModel
 from typing import Dict, Any, List, Union, overload
-from .core import Serializer, Mode, logger
+from .core import SerializerCls, Mode, logger
 from ._pysimd import _simdjson, SimdObject, SimdArray, create_simdobj
 
 
-class JsonBase(Serializer):
+class JsonBase(SerializerCls):
     default_value: Dict[Any, Any] = None
     async_supported: bool = True
     cloud_supported: bool = True

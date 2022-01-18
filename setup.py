@@ -6,13 +6,12 @@ from setuptools import setup, find_packages
 if sys.version_info.major != 3:
     raise RuntimeError("This package requires Python 3+")
 
-version = '0.1.05'
+version = '0.1.06'
 pkg_name = 'lazycls'
 gitrepo = 'trisongz/lazycls'
 root = Path(__file__).parent
 
 requirements = [
-    #'aiofiles',
     'anyio',
     'aiopath',
     'dill',
@@ -23,6 +22,7 @@ requirements = [
     'pysimdjson',
     'pyyaml',
     'sniffio',
+    'typer',
     'universal_pathlib'
 ]
 
@@ -37,7 +37,11 @@ args = {
     'install_requires': requirements,
     'include_package_data': True,
     'long_description': root.joinpath('README.md').read_text(encoding='utf-8'),
-    'entry_points': {}
+    'entry_points': {
+        "console_scripts": [
+            "lazy = lazy.cli.apps:baseCli",
+        ]
+    }
 }
 
 setup(
@@ -45,7 +49,7 @@ setup(
     version=version,
     url=f'https://github.com/{gitrepo}',
     license='MIT Style',
-    description='Dynamic Dataclasses for the Super Lazy',
+    description='Python Utilities for the Super Lazy',
     author='Tri Songz',
     author_email='ts@growthengineai.com',
     long_description_content_type="text/markdown",

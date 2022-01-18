@@ -24,6 +24,9 @@ class Serialize:
     OrJson: OrJson = OrJson
     DefaultJson: DefaultJson = DefaultJson
     
+class Serializer(Serialize):
+    pass
+
 
 
     
@@ -34,6 +37,6 @@ __all__ = (
     'Secret',
     'Pickle', 'Dill', 'Pkl',
     'Compression',
-    'Serialize',
+    'Serialize', 'Serializer',
     'YamlBase64', 'YamlBGZ', 'JsonBase64', 'JsonBGZ'
 )

@@ -4,11 +4,11 @@ import base64
 import hashlib
 
 from typing import Dict, Any, List, Union, overload
-from .core import Serializer, Mode, Defaults
+from .core import SerializerCls, Mode, Defaults
 
 #DEFAULT_BASE_METHOD = 'base64'
 
-class Base(Serializer):
+class Base(SerializerCls):
     default_value: str = None
     async_supported: bool = True
     cloud_supported: bool = True

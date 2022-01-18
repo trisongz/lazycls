@@ -6,7 +6,7 @@ import pickle as _pickle
 import dill as _dill
 
 from typing import Any
-from .core import SerializerB
+from .core import SerializerClsB
 
 # If isal is available, use it over defaults
 try:
@@ -40,7 +40,7 @@ class Compression:
     bz2 = _bz2
 
 
-class BasePickle(SerializerB):
+class BasePickle(SerializerClsB):
     default_value: Any = None
     async_supported: bool = True
     cloud_supported: bool = True
