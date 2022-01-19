@@ -1,5 +1,5 @@
 import os
-import pathlib
+from .baselib import pathlib
 from .base import *
 from .providers.gs_gcp import *
 from .providers.s3_aws import *

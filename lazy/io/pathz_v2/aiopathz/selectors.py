@@ -1,8 +1,13 @@
 from __future__ import annotations
-from pathlib import Path, PosixPath, WindowsPath, _NormalAccessor, _Selector,_is_wildcard_pattern, _ignore_error, _Flavour
-from typing import AsyncIterable, Callable, List, TYPE_CHECKING
-from os import DirEntry
+
 import functools
+
+from os import DirEntry
+from typing import AsyncIterable, Callable, List, TYPE_CHECKING
+
+from ..pathlibz import Path, PosixPath, WindowsPath, _NormalAccessor, _Selector,_is_wildcard_pattern, _ignore_error, _Flavour
+
+#from pathlib import Path, PosixPath, WindowsPath, _NormalAccessor, _Selector,_is_wildcard_pattern, _ignore_error, _Flavour
 
 from .wrap import CoroutineMethod
 

@@ -1,6 +1,6 @@
-from typing import Callable, Any, Awaitable
-from functools import wraps, partial
 
+from functools import wraps, partial
+from typing import Callable, Any, Awaitable
 from anyio.to_thread import run_sync
 
 

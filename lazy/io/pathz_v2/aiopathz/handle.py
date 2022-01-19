@@ -1,15 +1,17 @@
 from __future__ import annotations
-from typing import AsyncIterable, Union, TYPE_CHECKING, Optional, cast, Tuple
-from inspect import iscoroutinefunction
-from contextlib import asynccontextmanager
-from pathlib import Path
+
 import io
 
+from inspect import iscoroutinefunction
+from contextlib import asynccontextmanager
+from typing import AsyncContextManager
 from anyio import AsyncFile, open_file
 from aiofile import AIOFile, LineReader
+from typing import AsyncIterable, Union, TYPE_CHECKING, Optional, cast, Tuple
 
+from ..pathlibz import Path
 from .types import Final, FileMode
-from typing import AsyncContextManager
+
 
 if TYPE_CHECKING:  # keep mypy quiet
     from ..base import PathzPath

@@ -1,42 +1,14 @@
 from __future__ import annotations
 
-import os
-import io
-
-from pathlib import PosixPath, WindowsPath, _NormalAccessor, Path, PurePath, _ignore_error
-from pathlib import _make_selector as _sync_make_selector
-from typing import Optional, List, Union, AsyncIterable, Iterable, IO
-from os import stat_result, PathLike
+from lazy.serialize import Serialize
 from stat import S_ISDIR, S_ISLNK, S_ISREG, S_ISSOCK, S_ISBLK, S_ISCHR, S_ISFIFO
 
-from anyio import open_file
 
-#from aiopath.selectors import _make_selector
-#from aiopath.wrap import coro_as_method_coro, func_as_method_coro, to_thread, method_as_method_coro, func_to_async_func
-#from aiopath.handle import IterableAIOFile, get_handle
-#from aiopath.scandir import EntryWrapper, scandir_async, _scandir_results
-#from aiopath.types import Final, Literal, FileMode
-
-
-from .aiopathz.selectors import _make_selector
-from .aiopathz.wrap import coro_as_method_coro, func_as_method_coro, to_thread, method_as_method_coro, func_to_async_func
-from .aiopathz.handle import IterableAIOFile, get_handle
-from .aiopathz.scandir import EntryWrapper, scandir_async, _scandir_results
-from .aiopathz.types import Final, Literal, FileMode
-
-from lazy.serialize import Serialize
 from .types import *
+from .base_imports import *
+from .aiopathz.selectors import _make_selector
+from .aiopathz.scandir import EntryWrapper, scandir_async, _scandir_results
 from .flavours import _async_sync_windows_flavour, _async_sync_posix_flavour
-
-DEFAULT_ENCODING: Final[str] = 'utf-8'
-ON_ERRORS: Final[str] = 'ignore'
-NEWLINE: Final[str] = '\n'
-
-
-"""
-Taken from https://github.com/alexdelorenzo/aiopath/blob/Python-3.9/aiopath/path.py
-"""
-
 
 def scandir_sync(*args, **kwargs) -> Iterable[EntryWrapper]:
     results = _scandir_results(*args, **kwargs)
@@ -47,7 +19,7 @@ close = func_to_async_func(os.close)
 sync_close = os.close
 
 
-class _PathzAccessor(_NormalAccessor):
+class _PathzAccessor(NormalAccessor):
     # Sync methods
     stat = os.stat
     lstat = os.lstat
@@ -62,9 +34,9 @@ class _PathzAccessor(_NormalAccessor):
     async_listdir = func_as_method_coro(os.listdir)
     async_chmod = func_as_method_coro(os.chmod)
 
-    if hasattr(_NormalAccessor, 'lchmod'):
-        lchmod = _NormalAccessor.lchmod
-        async_lchmod = method_as_method_coro(_NormalAccessor.lchmod)
+    if hasattr(NormalAccessor, 'lchmod'):
+        lchmod = NormalAccessor.lchmod
+        async_lchmod = method_as_method_coro(NormalAccessor.lchmod)
 
     mkdir = os.mkdir
     unlink = os.unlink
@@ -72,24 +44,24 @@ class _PathzAccessor(_NormalAccessor):
     async_mkdir = func_as_method_coro(os.mkdir)
     async_unlink = func_as_method_coro(os.unlink)
 
-    if hasattr(_NormalAccessor, 'link'):
-        link = _NormalAccessor.link
-        async_link = method_as_method_coro(_NormalAccessor.link)
+    if hasattr(NormalAccessor, 'link'):
+        link = NormalAccessor.link
+        async_link = method_as_method_coro(NormalAccessor.link)
 
     rmdir = os.rmdir
     rename = os.rename
     replace = os.replace
-    symlink = staticmethod(_NormalAccessor.symlink)
+    symlink = staticmethod(NormalAccessor.symlink)
     utime = os.utime
-    readlink = _NormalAccessor.readlink
+    readlink = NormalAccessor.readlink
     remove = os.remove
 
     async_rmdir = func_as_method_coro(os.rmdir)
     async_rename = func_as_method_coro(os.rename)
     async_replace = func_as_method_coro(os.replace)
-    async_symlink = staticmethod(method_as_method_coro(_NormalAccessor.symlink))
+    async_symlink = staticmethod(method_as_method_coro(NormalAccessor.symlink))
     async_utime = func_as_method_coro(os.utime)
-    async_readlink = method_as_method_coro(_NormalAccessor.readlink)
+    async_readlink = method_as_method_coro(NormalAccessor.readlink)
     async_remove = func_as_method_coro(os.remove)
 
 

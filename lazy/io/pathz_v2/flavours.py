@@ -1,21 +1,11 @@
 from __future__ import annotations
-from pathlib import _PosixFlavour, _WindowsFlavour
-from typing import Optional, Callable, Awaitable, Dict, List, TYPE_CHECKING
-from errno import EINVAL
+
 import os
-import sys
-from .aiopathz.wrap import func_to_async_func as wrap_async
 
-try:
-    from pathlib import _getfinalpathname
-    _async_getfinalpathname = wrap_async(_getfinalpathname)
+from errno import EINVAL
+from typing import Optional, Callable, Awaitable, Dict, List, TYPE_CHECKING
 
-except ImportError:
-    def _getfinalpathname(*args, **kwargs):
-        raise ImportError("_getfinalpathname() requires a Windows/NT platform")
-
-    async def _async_getfinalpathname(*args, **kwargs):
-        raise ImportError("_getfinalpathname() requires a Windows/NT platform")
+from .base_imports import _PosixFlavour, _WindowsFlavour, _getfinalpathname, _async_getfinalpathname, func_to_async_func
 
 if TYPE_CHECKING:  # keep mypy quiet
     from .base import PathzPath, _PathzAccessor
@@ -27,7 +17,7 @@ class _AsyncSyncPosixFlavour(_PosixFlavour):
         return super().gethomedir(username)
 
     async def async_gethomedir(self, username: str) -> str:
-        gethomedir: Callable[[str], Awaitable[str]] = wrap_async(super().gethomedir)
+        gethomedir: Callable[[str], Awaitable[str]] = func_to_async_func(super().gethomedir)
         return await gethomedir(username)
 
     def resolve(self, path: PathzPath, strict: bool = False) -> Optional[str]:
@@ -128,7 +118,7 @@ class _AsyncSyncWindowsFlavour(_WindowsFlavour):
         return super().gethomedir(username)
 
     async def async_gethomedir(self, username: str) -> str: 
-        gethomedir: Callable[[str], Awaitable[str]] = wrap_async(super().gethomedir)
+        gethomedir: Callable[[str], Awaitable[str]] = func_to_async_func(super().gethomedir)
         return await gethomedir(username)
 
     def resolve(self, path: 'PathzPath', strict: bool = False) -> Optional[str]:
