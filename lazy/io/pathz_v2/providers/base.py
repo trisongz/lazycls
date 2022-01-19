@@ -13,9 +13,13 @@ from os import stat_result, PathLike
 from contextlib import asynccontextmanager
 
 from anyio import open_file
-from aiopath.wrap import coro_as_method_coro, func_as_method_coro, to_thread, method_as_method_coro, func_to_async_func
-from aiopath.handle import IterableAIOFile, get_handle
-from aiopath.types import Final, Literal, FileMode
+#from aiopath.wrap import coro_as_method_coro, func_as_method_coro, to_thread, method_as_method_coro, func_to_async_func
+#from aiopath.handle import IterableAIOFile, get_handle
+#from aiopath.types import Final, Literal, FileMode
+
+from ..aiopathz.wrap import coro_as_method_coro, func_as_method_coro, to_thread, method_as_method_coro, func_to_async_func
+from ..aiopathz.handle import IterableAIOFile, get_handle
+from ..aiopathz.types import Final, Literal, FileMode
 
 from fsspec.asyn import AsyncFileSystem
 from anyio import AsyncFile, open_file

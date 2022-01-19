@@ -11,11 +11,18 @@ from stat import S_ISDIR, S_ISLNK, S_ISREG, S_ISSOCK, S_ISBLK, S_ISCHR, S_ISFIFO
 
 from anyio import open_file
 
-from aiopath.selectors import _make_selector
-from aiopath.wrap import coro_as_method_coro, func_as_method_coro, to_thread, method_as_method_coro, func_to_async_func
-from aiopath.handle import IterableAIOFile, get_handle
-from aiopath.scandir import EntryWrapper, scandir_async, _scandir_results
-from aiopath.types import Final, Literal, FileMode
+#from aiopath.selectors import _make_selector
+#from aiopath.wrap import coro_as_method_coro, func_as_method_coro, to_thread, method_as_method_coro, func_to_async_func
+#from aiopath.handle import IterableAIOFile, get_handle
+#from aiopath.scandir import EntryWrapper, scandir_async, _scandir_results
+#from aiopath.types import Final, Literal, FileMode
+
+
+from .aiopathz.selectors import _make_selector
+from .aiopathz.wrap import coro_as_method_coro, func_as_method_coro, to_thread, method_as_method_coro, func_to_async_func
+from .aiopathz.handle import IterableAIOFile, get_handle
+from .aiopathz.scandir import EntryWrapper, scandir_async, _scandir_results
+from .aiopathz.types import Final, Literal, FileMode
 
 from lazy.serialize import Serialize
 from .types import *
