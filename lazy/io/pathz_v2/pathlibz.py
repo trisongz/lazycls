@@ -36,8 +36,10 @@ __all__ = [
 
 # EBADF - guard against macOS `stat` throwing EBADF
 _IGNORED_ERROS = (ENOENT, ENOTDIR, EBADF, ELOOP)
+
 _IGNORED_WINERRORS = (
     21,  # ERROR_NOT_READY - drive exists but is not accessible
+    123, # ERROR_INVALID_NAME - fix for bpo-35306
     1921,  # ERROR_CANT_RESOLVE_FILENAME - fix for broken symlink pointing to itself
 )
 
@@ -130,16 +132,25 @@ class _WindowsFlavour(_Flavour):
     ext_namespace_prefix = '\\\\?\\'
 
     reserved_names = (
-        {'CON', 'PRN', 'AUX', 'NUL'} |
-        {'COM%d' % i for i in range(1, 10)} |
-        {'LPT%d' % i for i in range(1, 10)}
+        {'CON', 'PRN', 'AUX', 'NUL', 'CONIN$', 'CONOUT$'} |
+        {'COM%s' % c for c in '123456789\xb9\xb2\xb3'} |
+        {'LPT%s' % c for c in '123456789\xb9\xb2\xb3'}
         )
 
     # Interesting findings about extended paths:
-    # - '\\?\c:\a', '//?/c:\a' and '//?/c:/a' are all supported
-    #   but '\\?\c:/a' is not
-    # - extended paths are always absolute; "relative" extended paths will
-    #   fail.
+    # * '\\?\c:\a' is an extended path, which bypasses normal Windows API
+    #   path processing. Thus relative paths are not resolved and slash is not
+    #   translated to backslash. It has the native NT path limit of 32767
+    #   characters, but a bit less after resolving device symbolic links,
+    #   such as '\??\C:' => '\Device\HarddiskVolume2'.
+    # * '\\?\c:/a' looks for a device named 'C:/a' because slash is a
+    #   regular name character in the object namespace.
+    # * '\\?\c:\foo/bar' is invalid because '/' is illegal in NT filesystems.
+    #   The only path separator at the filesystem level is backslash.
+    # * '//?/c:\a' and '//?/c:/a' are effectively equivalent to '\\.\c:\a' and
+    #   thus limited to MAX_PATH.
+    # * Prior to Windows 8, ANSI API bytes paths are limited to MAX_PATH,
+    #   even with the '\\?\' prefix.
 
     def splitroot(self, part, sep=sep):
         first = part[0:1]
@@ -229,15 +240,16 @@ class _WindowsFlavour(_Flavour):
 
     def is_reserved(self, parts):
         # NOTE: the rules for reserved names seem somewhat complicated
-        # (e.g. r"..\NUL" is reserved but not r"foo\NUL").
-        # We err on the side of caution and return True for paths which are
-        # not considered reserved by Windows.
+        # (e.g. r"..\NUL" is reserved but not r"foo\NUL" if "foo" does not
+        # exist). We err on the side of caution and return True for paths
+        # which are not considered reserved by Windows.
         if not parts:
             return False
         if parts[0].startswith('\\\\'):
             # UNC paths are never reserved
             return False
-        return parts[-1].partition('.')[0].upper() in self.reserved_names
+        name = parts[-1].partition('.')[0].partition(':')[0].rstrip(' ')
+        return name.upper() in self.reserved_names
 
     def make_uri(self, path):
         # Under Windows, file URIs use the UTF-8 encoding.
@@ -629,10 +641,7 @@ class _PathParents(Sequence):
             return len(self._parts)
 
     def __getitem__(self, idx):
-        if isinstance(idx, slice):
-            return tuple(self[i] for i in range(*idx.indices(len(self))))
-
-        if idx >= len(self) or idx < -len(self):
+        if idx < 0 or idx >= len(self):
             raise IndexError(idx)
         return self._pathcls._from_parsed_parts(self._drv, self._root,
                                                 self._parts[:-idx - 1])
@@ -691,7 +700,7 @@ class PurePath(object):
         return cls._flavour.parse_parts(parts)
 
     @classmethod
-    def _from_parts(cls, args):
+    def _from_parts(cls, args, init=True):
         # We need to call _parse_args on the instance, so as to get the
         # right flavour.
         self = object.__new__(cls)
@@ -699,14 +708,18 @@ class PurePath(object):
         self._drv = drv
         self._root = root
         self._parts = parts
+        if init:
+            self._init()
         return self
 
     @classmethod
-    def _from_parsed_parts(cls, drv, root, parts):
+    def _from_parsed_parts(cls, drv, root, parts, init=True):
         self = object.__new__(cls)
         self._drv = drv
         self._root = root
         self._parts = parts
+        if init:
+            self._init()
         return self
 
     @classmethod
@@ -715,6 +728,10 @@ class PurePath(object):
             return drv + root + cls._flavour.join(parts[1:])
         else:
             return cls._flavour.join(parts)
+
+    def _init(self):
+        # Overridden in concrete Path
+        pass
 
     def _make_child(self, args):
         drv, root, parts = self._parse_args(args)
@@ -1055,17 +1072,28 @@ class Path(PurePath):
     object. You can also instantiate a PosixPath or WindowsPath directly,
     but cannot instantiate a WindowsPath on a POSIX system or vice versa.
     """
-    _accessor = _normal_accessor
-    __slots__ = ()
+    __slots__ = (
+        '_accessor',
+    )
 
     def __new__(cls, *args, **kwargs):
         if cls is Path:
             cls = WindowsPath if os.name == 'nt' else PosixPath
-        self = cls._from_parts(args)
+        self = cls._from_parts(args, init=False)
         if not self._flavour.is_supported:
             raise NotImplementedError("cannot instantiate %r on your system"
                                       % (cls.__name__,))
+        self._init()
         return self
+
+    def _init(self,
+              # Private non-constructor arguments
+              template=None,
+              ):
+        if template is not None:
+            self._accessor = template._accessor
+        else:
+            self._accessor = _normal_accessor
 
     def _make_child_relpath(self, part):
         # This is an optimization used for dir walking.  `part` must be
@@ -1174,7 +1202,9 @@ class Path(PurePath):
             return self
         # FIXME this must defer to the specific flavour (and, under Windows,
         # use nt._getfullpathname())
-        return self._from_parts([os.getcwd()] + self._parts)
+        obj = self._from_parts([os.getcwd()] + self._parts, init=False)
+        obj._init(template=self)
+        return obj
 
     def resolve(self, strict=False):
         """
@@ -1190,7 +1220,9 @@ class Path(PurePath):
             s = str(self.absolute())
         # Now we have no symlinks in the path, it's safe to normalize it.
         normed = self._flavour.pathmod.normpath(s)
-        return self._from_parts((normed,))
+        obj = self._from_parts((normed,), init=False)
+        obj._init(template=self)
+        return obj
 
     def stat(self):
         """
@@ -1243,14 +1275,14 @@ class Path(PurePath):
         with self.open(mode='wb') as f:
             return f.write(view)
 
-    def write_text(self, data, encoding=None, errors=None, newline=None):
+    def write_text(self, data, encoding=None, errors=None):
         """
         Open the file in text mode, write to it, and close the file.
         """
         if not isinstance(data, str):
             raise TypeError('data must be str, not %s' %
                             data.__class__.__name__)
-        with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+        with self.open(mode='w', encoding=encoding, errors=errors) as f:
             return f.write(data)
 
     def readlink(self):
@@ -1258,7 +1290,9 @@ class Path(PurePath):
         Return the path to which the symbolic link points.
         """
         path = self._accessor.readlink(self)
-        return self._from_parts((path,))
+        obj = self._from_parts((path,), init=False)
+        obj._init(template=self)
+        return obj
 
     def touch(self, mode=0o666, exist_ok=True):
         """
@@ -1335,12 +1369,6 @@ class Path(PurePath):
         """
         return self._accessor.lstat(self)
 
-    def link_to(self, target):
-        """
-        Create a hard link pointing to a path named target.
-        """
-        self._accessor.link_to(self, target)
-
     def rename(self, target):
         """
         Rename this path to the target path.
@@ -1369,10 +1397,22 @@ class Path(PurePath):
 
     def symlink_to(self, target, target_is_directory=False):
         """
-        Make this path a symlink pointing to the given path.
-        Note the order of arguments (self, target) is the reverse of os.symlink's.
+        Make this path a symlink pointing to the target path.
+        Note the order of arguments (link, target) is the reverse of os.symlink.
         """
         self._accessor.symlink(target, self, target_is_directory)
+
+    def link_to(self, target):
+        """
+        Make the target path a hard link pointing to this path.
+
+        Note this function does not make this path a hard link to *target*,
+        despite the implication of the function and argument names. The order
+        of arguments (target, link) is the reverse of Path.symlink_to, but
+        matches that of os.link.
+
+        """
+        self._accessor.link_to(self, target)
 
     # Convenience functions for querying the stat results
 
@@ -1401,7 +1441,7 @@ class Path(PurePath):
             if not _ignore_error(e):
                 raise
             # Path doesn't exist or is a broken symlink
-            # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+            # (see http://web.archive.org/web/20200623061726/https://bitbucket.org/pitrou/pathlib/issues/12/ )
             return False
         except ValueError:
             # Non-encodable path
@@ -1418,7 +1458,7 @@ class Path(PurePath):
             if not _ignore_error(e):
                 raise
             # Path doesn't exist or is a broken symlink
-            # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+            # (see http://web.archive.org/web/20200623061726/https://bitbucket.org/pitrou/pathlib/issues/12/ )
             return False
         except ValueError:
             # Non-encodable path
@@ -1469,7 +1509,7 @@ class Path(PurePath):
             if not _ignore_error(e):
                 raise
             # Path doesn't exist or is a broken symlink
-            # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+            # (see http://web.archive.org/web/20200623061726/https://bitbucket.org/pitrou/pathlib/issues/12/ )
             return False
         except ValueError:
             # Non-encodable path
@@ -1485,7 +1525,7 @@ class Path(PurePath):
             if not _ignore_error(e):
                 raise
             # Path doesn't exist or is a broken symlink
-            # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+            # (see http://web.archive.org/web/20200623061726/https://bitbucket.org/pitrou/pathlib/issues/12/ )
             return False
         except ValueError:
             # Non-encodable path
@@ -1501,7 +1541,7 @@ class Path(PurePath):
             if not _ignore_error(e):
                 raise
             # Path doesn't exist or is a broken symlink
-            # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+            # (see http://web.archive.org/web/20200623061726/https://bitbucket.org/pitrou/pathlib/issues/12/ )
             return False
         except ValueError:
             # Non-encodable path
@@ -1517,7 +1557,7 @@ class Path(PurePath):
             if not _ignore_error(e):
                 raise
             # Path doesn't exist or is a broken symlink
-            # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+            # (see http://web.archive.org/web/20200623061726/https://bitbucket.org/pitrou/pathlib/issues/12/ )
             return False
         except ValueError:
             # Non-encodable path

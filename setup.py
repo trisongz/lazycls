@@ -13,6 +13,7 @@ root = Path(__file__).parent
 
 requirements = [
     'anyio',
+    'aiofile',
     #'aiopath', # remove deps as 3.10 vs 3.9 is different
     'dill',
     'fsspec',
