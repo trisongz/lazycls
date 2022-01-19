@@ -4,7 +4,7 @@ from typing import Optional, Callable, Awaitable, Dict, List, TYPE_CHECKING
 from errno import EINVAL
 import os
 import sys
-from aiopath.wrap import func_to_async_func as wrap_async
+from .aiopathz.wrap import func_to_async_func as wrap_async
 
 try:
     from pathlib import _getfinalpathname
