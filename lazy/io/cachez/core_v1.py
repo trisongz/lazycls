@@ -1,6 +1,8 @@
 
 """ 
 Source: https://github.com/grantjenks/python-diskcache/blob/71db7753610bcd4bd7adda28abeb2b0fdebbc31f/diskcache/core.py
+
+Deprecated in favor of v2
 """
 import sys
 import codecs
@@ -22,7 +24,7 @@ import warnings
 import zlib
 import dill
 
-from .static import *
+from .static_v1 import *
 from typing import TYPE_CHECKING, Type
 from types import ModuleType
 

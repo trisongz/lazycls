@@ -1,0 +1,96 @@
+------------------------------------------------------           
+  
+[default Mode] Async Memoized Set/Get Results [1000 Ops] 
+  
+- [Bare]: 0.2672 secs = 3737.41/ops/sec
+- [CDisk]: 0.3213 secs = 3111.61/ops/sec
+------------------------------------------------------
+  
+[default Mode] Async Set/Get Results [1000 Ops]
+  
+- [Bare]: 0.16713 secs = 5980.65/ops/sec
+- [CDisk]: 0.36618 secs = 2730.34/ops/sec
+------------------------------------------------------           
+  
+[standard Mode] Async Memoized Set/Get Results [1000 Ops] 
+  
+- [Bare]: 0.24835 secs = 4025.12/ops/sec
+- [CDisk]: 0.3186 secs = 3137.90/ops/sec
+------------------------------------------------------
+  
+[standard Mode] Async Set/Get Results [1000 Ops]
+  
+- [Bare]: 0.16837 secs = 5936.54/ops/sec
+- [CDisk]: 0.36982 secs = 2703.39/ops/sec
+------------------------------------------------------           
+  
+[opt Mode] Async Memoized Set/Get Results [1000 Ops] 
+  
+- [Bare]: 0.2689 secs = 3717.54/ops/sec
+- [CDisk]: 0.32376 secs = 3087.86/ops/sec
+------------------------------------------------------
+  
+[opt Mode] Async Set/Get Results [1000 Ops]
+  
+- [Bare]: 0.1671 secs = 5981.57/ops/sec
+- [CDisk]: 0.36981 secs = 2703.52/ops/sec
+------------------------------------------------------           
+  
+[perf Mode] Async Memoized Set/Get Results [1000 Ops] 
+  
+- [Bare]: 0.25769 secs = 3879.32/ops/sec
+- [CDisk]: 0.37042 secs = 2699.06/ops/sec
+------------------------------------------------------
+  
+[perf Mode] Async Set/Get Results [1000 Ops]
+  
+- [Bare]: 0.19477 secs = 5132.05/ops/sec
+- [CDisk]: 0.39168 secs = 2552.63/ops/sec
+------------------------------------------------------           
+  
+[default Mode] Async Memoized Set/Get Results [2000 Ops] 
+  
+- [Bare]: 0.48353 secs = 4135.57/ops/sec
+- [CDisk]: 0.81909 secs = 2441.49/ops/sec
+------------------------------------------------------
+  
+[default Mode] Async Set/Get Results [2000 Ops]
+  
+- [Bare]: 0.39039 secs = 5122.01/ops/sec
+- [CDisk]: 1.18175 secs = 1692.27/ops/sec
+------------------------------------------------------           
+  
+[standard Mode] Async Memoized Set/Get Results [2000 Ops] 
+  
+- [Bare]: 0.49165 secs = 4067.21/ops/sec
+- [CDisk]: 0.82291 secs = 2430.16/ops/sec
+------------------------------------------------------
+  
+[standard Mode] Async Set/Get Results [2000 Ops]
+  
+- [Bare]: 0.364 secs = 5493.19/ops/sec
+- [CDisk]: 1.17864 secs = 1696.74/ops/sec
+------------------------------------------------------           
+  
+[opt Mode] Async Memoized Set/Get Results [2000 Ops] 
+  
+- [Bare]: 0.50152 secs = 3987.28/ops/sec
+- [CDisk]: 0.82057 secs = 2437.07/ops/sec
+------------------------------------------------------
+  
+[opt Mode] Async Set/Get Results [2000 Ops]
+  
+- [Bare]: 0.36001 secs = 5554.11/ops/sec
+- [CDisk]: 1.17779 secs = 1697.95/ops/sec
+------------------------------------------------------           
+  
+[perf Mode] Async Memoized Set/Get Results [2000 Ops] 
+  
+- [Bare]: 0.50963 secs = 3923.76/ops/sec
+- [CDisk]: 0.96888 secs = 2064.05/ops/sec
+------------------------------------------------------
+  
+[perf Mode] Async Set/Get Results [2000 Ops]
+  
+- [Bare]: 0.40411 secs = 4948.12/ops/sec
+- [CDisk]: 1.25269 secs = 1596.43/ops/sec

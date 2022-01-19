@@ -22,6 +22,8 @@ class PurePathzGSPosixPath(PurePathzCFSPosixPath):
     _flavour = _pathz_posix_flavour
     _pathlike = posixpath
     __slots__ = ()
+    _prefix = 'gs'
+    _provider = 'GoogleCloudStorage'
 
 
 class PurePathzGSWindowsPath(PurePathzCFSWindowsPath):
@@ -32,6 +34,8 @@ class PurePathzGSWindowsPath(PurePathzCFSWindowsPath):
     _flavour = _pathz_windows_flavour
     _pathlike = ntpath
     __slots__ = ()
+    _prefix = 'gs'
+    _provider = 'GoogleCloudStorage'
 
 class PathzGSPath(PathzCFSPath):
     """

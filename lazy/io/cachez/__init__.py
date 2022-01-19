@@ -1,15 +1,12 @@
 from . import static
-from .core import (
-    DEFAULT_SETTINGS,
-    ENOVAL,
-    EVICTION_POLICY,
-    UNKNOWN,
+from .config import CachezConfigz, SqlConfig
+from .base import (
     Cache,
     Disk,
+    CDisk,
     EmptyDirWarning,
-    JSONDisk,
     Timeout,
     UnknownFileWarning,
 )
-
-from ._json import OrJSONDisk
+from ._json import OrJSONDisk, JSONDisk
+from .persistent import Index, Deque

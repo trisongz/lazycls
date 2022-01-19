@@ -14,7 +14,7 @@ from collections.abc import (
 from contextlib import contextmanager
 from shutil import rmtree
 
-from .core import ENOVAL, Cache
+from .base import ENOVAL, Cache
 
 
 def _make_compare(seq_op, doc):
