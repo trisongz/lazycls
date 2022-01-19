@@ -6,14 +6,14 @@ from setuptools import setup, find_packages
 if sys.version_info.major != 3:
     raise RuntimeError("This package requires Python 3+")
 
-version = '0.1.06'
+version = '0.1.07'
 pkg_name = 'lazycls'
 gitrepo = 'trisongz/lazycls'
 root = Path(__file__).parent
 
 requirements = [
     'anyio',
-    'aiopath',
+    #'aiopath', # remove deps as 3.10 vs 3.9 is different
     'dill',
     'fsspec',
     'orjson',
