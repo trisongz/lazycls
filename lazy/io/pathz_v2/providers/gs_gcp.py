@@ -19,7 +19,7 @@ class PurePathzGSPosixPath(PurePathzCFSPosixPath):
     On a POSIX system, instantiating a PurePath should return this object.
     However, you can also instantiate it directly on any system.
     """
-    _flavour = _async_sync_posix_flavour
+    _flavour = _pathz_posix_flavour
     _pathlike = posixpath
     __slots__ = ()
 
@@ -29,7 +29,7 @@ class PurePathzGSWindowsPath(PurePathzCFSWindowsPath):
     On a Windows system, instantiating a PurePath should return this object.
     However, you can also instantiate it directly on any system.
     """
-    _flavour = _async_sync_windows_flavour
+    _flavour = _pathz_windows_flavour
     _pathlike = ntpath
     __slots__ = ()
 
@@ -37,7 +37,7 @@ class PathzGSPath(PathzCFSPath):
     """
     Our customized class that incorporates both sync and async methods
     """
-    _flavour = _async_sync_windows_flavour if os.name == 'nt' else _async_sync_posix_flavour
+    _flavour = _pathz_windows_flavour if os.name == 'nt' else _pathz_posix_flavour
     _accessor: AccessorLike = None
     _pathlike = posixpath
     _prefix = 'gs'

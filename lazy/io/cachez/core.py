@@ -255,7 +255,7 @@ class Disk:
 
         try:
             os.remove(full_path)
-        except WindowsError:
+        except WindowsExceptionError:
             pass
         except OSError as error:
             if error.errno != errno.ENOENT:

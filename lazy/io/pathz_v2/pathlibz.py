@@ -1,3 +1,9 @@
+"""
+Source: https://raw.githubusercontent.com/python/cpython/3.9/Lib/pathlib.py
+
+From python3.9 @ master
+"""
+
 import fnmatch
 import functools
 import io

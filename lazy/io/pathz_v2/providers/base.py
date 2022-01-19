@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 from ..base_imports import *
-from ..flavours import _async_sync_windows_flavour, _async_sync_posix_flavour
+from ..flavours import _pathz_windows_flavour, _pathz_posix_flavour
 
 from lazy.io.pathz_v2.types import *
 from .cloud_static import _ASYNC_SYNTAX_MAPPING

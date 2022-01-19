@@ -11,7 +11,7 @@ if TYPE_CHECKING:  # keep mypy quiet
     from .base import PathzPath, _PathzAccessor
 
 
-class _AsyncSyncPosixFlavour(_PosixFlavour):
+class _PathzPosixFlavour(_PosixFlavour):
     
     def gethomedir(self, username: str) -> str:
         return super().gethomedir(username)
@@ -113,7 +113,7 @@ class _AsyncSyncPosixFlavour(_PosixFlavour):
         return result or sep
 
 
-class _AsyncSyncWindowsFlavour(_WindowsFlavour):
+class _PathzWindowsFlavour(_WindowsFlavour):
     def gethomedir(self, username: str) -> str: 
         return super().gethomedir(username)
 
@@ -164,5 +164,5 @@ class _AsyncSyncWindowsFlavour(_WindowsFlavour):
         return None
 
 
-_async_sync_windows_flavour = _AsyncSyncWindowsFlavour()
-_async_sync_posix_flavour = _AsyncSyncPosixFlavour()
+_pathz_windows_flavour = _PathzWindowsFlavour()
+_pathz_posix_flavour = _PathzPosixFlavour()

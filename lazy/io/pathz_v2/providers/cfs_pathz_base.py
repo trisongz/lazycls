@@ -6,7 +6,7 @@ from typing import ClassVar
 
 from lazy.serialize import Serialize
 from .base import *
-from ..flavours import _async_sync_windows_flavour, _async_sync_posix_flavour
+from ..flavours import _pathz_windows_flavour, _pathz_posix_flavour
 
 
 if TYPE_CHECKING:
@@ -26,8 +26,9 @@ class PathzCFSPurePath(PurePath):
         self._accessor: AccessorLike = get_accessor(self._prefix)
 
     def __new__(cls, *args):
-        if issubclass(PathzCFSPurePath): 
+        if cls is PathzCFSPurePath or issubclass(cls, PathzCFSPurePath):
             cls = cls._win_pathz if os.name == 'nt' else cls._posix_pathz
+            cls = globals()[cls]
         return cls._from_parts(args)
 
     def _new(self, *parts):
@@ -40,7 +41,7 @@ class PurePathzCFSPosixPath(PathzCFSPurePath):
     On a POSIX system, instantiating a PurePath should return this object.
     However, you can also instantiate it directly on any system.
     """
-    _flavour = _async_sync_posix_flavour
+    _flavour = _pathz_posix_flavour
     _pathlike = posixpath
     __slots__ = ()
 
@@ -50,7 +51,7 @@ class PurePathzCFSWindowsPath(PathzCFSPurePath):
     On a Windows system, instantiating a PurePath should return this object.
     However, you can also instantiate it directly on any system.
     """
-    _flavour = _async_sync_windows_flavour
+    _flavour = _pathz_windows_flavour
     _pathlike = ntpath
     __slots__ = ()
 
@@ -59,7 +60,7 @@ class PathzCFSPath(Path, PathzCFSPurePath):
     """
     Our customized class that incorporates both sync and async methods
     """
-    _flavour = _async_sync_windows_flavour if os.name == 'nt' else _async_sync_posix_flavour
+    _flavour = _pathz_windows_flavour if os.name == 'nt' else _pathz_posix_flavour
     _accessor: AccessorLike = None
     _pathlike = posixpath
     _prefix = None
@@ -73,7 +74,7 @@ class PathzCFSPath(Path, PathzCFSPurePath):
         self._fileio = None
 
     def __new__(cls, *parts, **kwargs):
-        if issubclass(PathzCFSPath): 
+        if cls is PathzCFSPath or issubclass(cls, PathzCFSPath): 
             cls = cls._win_pathz if os.name == 'nt' else cls._posix_pathz
             cls = globals()[cls]
         self = cls._from_parts(parts, init=False)
@@ -129,8 +130,17 @@ class PathzCFSPath(Path, PathzCFSPurePath):
         return self._prefix + '://' + '/'.join(self.parts[1:])
     
     @property
+    def posix_(self):
+        """Return the string representation of the path with forward (/)
+        slashes."""
+        f = self._flavour
+        return str(self).replace(f.sep, '/')
+
+    @property
     def string(self) -> str:
-        return str(self)
+        if self.is_cloud:
+            return self._cloudstr
+        return self.posix_
     
     @property
     def filename_(self) -> str:
@@ -1344,8 +1354,8 @@ __all__ = (
     'PurePathzCFSWindowsPath',
     'PathzCFSPath',
     'Path',
-    '_async_sync_windows_flavour',
-    '_async_sync_posix_flavour',
+    '_pathz_windows_flavour',
+    '_pathz_posix_flavour',
     'PathzCFSPosixPath',
     'PathzCFSWindowsPath',
     'register_pathlike'

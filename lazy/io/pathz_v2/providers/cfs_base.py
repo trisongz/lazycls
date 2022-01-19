@@ -94,10 +94,6 @@ class CFSType(type):
             cls.build_minio(**auth_config)
         elif cls.fs_name == 'gcsfs':
             cls.build_gcsfs(**auth_config)
-        #import importlib
-        #importlib.reload(cls.__module__)
-        #import lazy.io.pathz_v2.providers.cfs_base
-        #importlib.reload(lazy.io.pathz_v2.providers.cfs_base)
 
 
     @classmethod
@@ -106,12 +102,6 @@ class CFSType(type):
         Reinitializes the Filesystem
         """
         raise NotImplementedError
-        
-        #global _pathz_gs_accessor, _PathzGSAccessor
-        #global _PathzGSAccessor
-        #cls.build_filesystems(force=True)
-        #_PathzGSAccessor = _create_accessor()
-        #_pathz_gs_accessor = _PathzGSAccessor()
 
 
 def _dummy_func(*args, **kwargs) -> Optional[Any]:

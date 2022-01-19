@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from lazy.serialize import Serialize
 from stat import S_ISDIR, S_ISLNK, S_ISREG, S_ISSOCK, S_ISBLK, S_ISCHR, S_ISFIFO
-
+from typing import ClassVar
 
 from .types import *
 from .base_imports import *
 from .aiopathz.selectors import _make_selector
 from .aiopathz.scandir import EntryWrapper, scandir_async, _scandir_results
-from .flavours import _async_sync_windows_flavour, _async_sync_posix_flavour
+from .flavours import _pathz_windows_flavour, _pathz_posix_flavour
+
 
 def scandir_sync(*args, **kwargs) -> Iterable[EntryWrapper]:
     results = _scandir_results(*args, **kwargs)
@@ -108,11 +109,18 @@ _pathz_accessor = _PathzAccessor()
 
 
 class PathzPurePath(PurePath):
+    _prefix: str = None
+    _provider: str = None
+    _win_pathz: ClassVar = 'PurePathzWindowsPath'
+    _posix_pathz: ClassVar = 'PurePathzPosixPath'
+
     def _init(self, template: Optional[PurePath] = None):
         self._accessor = _pathz_accessor
 
     def __new__(cls, *args):
-        if cls is PathzPurePath: cls = PurePathzWindowsPath if os.name == 'nt' else PurePathzPosixPath
+        if cls is PathzPurePath or issubclass(cls, PathzPurePath): 
+            cls = cls._win_pathz if os.name == 'nt' else cls._posix_pathz
+            cls = globals()[cls]
         return cls._from_parts(args)
 
 
@@ -121,7 +129,7 @@ class PurePathzPosixPath(PathzPurePath):
     On a POSIX system, instantiating a PurePath should return this object.
     However, you can also instantiate it directly on any system.
     """
-    _flavour = _async_sync_posix_flavour
+    _flavour = _pathz_posix_flavour
     __slots__ = ()
 
 
@@ -130,7 +138,7 @@ class PurePathzWindowsPath(PathzPurePath):
     On a Windows system, instantiating a PurePath should return this object.
     However, you can also instantiate it directly on any system.
     """
-    _flavour = _async_sync_windows_flavour
+    _flavour = _pathz_windows_flavour
     __slots__ = ()
 
 
@@ -138,8 +146,12 @@ class PathzPath(Path, PathzPurePath):
     """
     Our customized class that incorporates both sync and async methods
     """
-    _flavour = _async_sync_windows_flavour if os.name == 'nt' else _async_sync_posix_flavour
+    _flavour = _pathz_windows_flavour if os.name == 'nt' else _pathz_posix_flavour
     _accessor = _pathz_accessor
+    _prefix = None
+    _provider = None
+    _win_pathz: ClassVar = 'PathzWindowsPath'
+    _posix_pathz: ClassVar = 'PathzPosixPath'
 
     def _init(self, template: Optional[PathzPath] = None):
         self._accessor = _pathz_accessor
@@ -147,8 +159,10 @@ class PathzPath(Path, PathzPurePath):
         self._fileio = None
 
     def __new__(cls, *args, **kwargs):
-        if cls is PathzPath: cls = PathzWindowsPath if os.name == 'nt' else PathzPosixPath
-
+        #if cls is PathzPath: cls = PathzWindowsPath if os.name == 'nt' else PathzPosixPath
+        if cls is PathzPath or issubclass(cls, PathzPath): 
+            cls = cls._win_pathz if os.name == 'nt' else cls._posix_pathz
+            cls = globals()[cls]
         self = cls._from_parts(args, init=False)
         if not self._flavour.is_supported:
             name: str = cls.__name__
@@ -161,9 +175,53 @@ class PathzPath(Path, PathzPurePath):
     def _path(self) -> str:
         return str(self)
     
+
+    @property
+    def _cloudpath(self) -> str:
+        """
+        Returns the `__fspath__` string representation without the uri_scheme
+        """
+        return None
+    
+    @property
+    def _bucket(self) -> str:
+        """
+        Returns the `__fspath__` string representation without the uri_scheme
+        """
+        return None
+    
+    @property
+    def _bucketstr(self) -> Optional[str]:
+        """
+        Returns the `__fspath__` string representation without the uri_scheme
+        """
+        return None
+    
+    @property
+    def _pathkeys(self) -> Optional[str]:
+        """
+        Returns the `__fspath__` string representation without the uri_scheme
+        """
+        return None
+    
+    @property
+    def _cloudstr(self) -> Optional[str]:
+        """
+        Reconstructs the proper cloud URI
+        """
+        return None
+    
+    @property
+    def posix_(self):
+        """Return the string representation of the path with forward (/)
+        slashes."""
+        f = self._flavour
+        return str(self).replace(f.sep, '/')
+
     @property
     def string(self) -> str:
-        return str(self)
+        return self.posix_
+
     
     @property
     def filename_(self) -> str:

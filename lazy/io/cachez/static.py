@@ -1,6 +1,6 @@
 __all__ = (
     'full_name',
-    'WindowsError',
+    'WindowsExceptionError',
     'Constant',
     'DBNAME',
     'ENOVAL',
@@ -23,10 +23,17 @@ def full_name(func):
 
 
 
-try: WindowsError
-except NameError:
-    class WindowsError(Exception):
+try: 
+    class WindowsExceptionError(WindowsError):
+        pass
+except:
+    class WindowsExceptionError(Exception):
         "Windows error place-holder on platforms without support."
+
+
+#except NameError:
+
+
 
 
 class Constant(tuple):
