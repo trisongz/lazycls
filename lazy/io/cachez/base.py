@@ -447,7 +447,8 @@ class Cache:
     def __init__(self, directory: str = None, filename: str = None, table_name: str = CachezConfigz.default_table, timeout: int = 60, disk: Type[Disk] = Disk, sql_config: Dict[str, Any] = {}, **settings):
         """Initialize cache instance.
         :param str directory: cache directory
-        :param str database_name: name prefix for cache file. will be prefixed to `_cache.db`
+        :param str filename: name prefix for cache file. will be prefixed to `_cache.db`
+        :param str table_name: the inital table to be used
         :param float timeout: SQLite connection timeout
         :param disk: Disk type or subclass for serialization
         :param settings: any of DEFAULT_SETTINGS
@@ -464,8 +465,9 @@ class Cache:
         self._directory = directory
         self._directory_path = get_path(directory)
         
-        filename = CachezConfigz.dbname if filename is None else filename + '_' + CachezConfigz.dbname
-        
+        filename = CachezConfigz.dbname if filename is None else filename # + '_' + CachezConfigz.dbname
+        if '.db' not in filename: filename = filename + '_' + CachezConfigz.dbname
+
         self._filename = filename
         self._filepath = self._directory_path.joinpath(filename)
 

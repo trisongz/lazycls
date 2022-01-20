@@ -27,6 +27,7 @@ class SqlConfig(BaseCls):
 
 class CachezConfigz(ConfigCls):
     dbname: str = 'cache.db'
+    default_name: str = 'cachez'
     sqlmode: str = 'default' # default / standard / perf / optimized
     default_table: str = 'Cache'
     serializer: str = 'dill' # dill / pickle
@@ -56,6 +57,14 @@ class CachezConfigz(ConfigCls):
     optim_sqlite_cache_size: int = '4096' # '8192' # 8,192 pages
     perf_sqlite_cache_size: int = '4096' # '32768' # 32,768 pages
 
+    def get(self, key: str, default=None):
+        if hasattr(self, key): return getattr(self, key, default)
+        if hasattr(self, f'{self.sqlmode}_{key}'): return getattr(self, f'{self.sqlmode}_{key}', default)
+        return default
+
+    @property
+    def default_keys(self):
+        return [u'statistics', u'tag_index', u'eviction_policy', u'cull_limit', u'sqlite_auto_vacuum', u'sqlite_cache_size', u'sqlite_journal_mode', u'sqlite_mmap_size', u'sqlite_synchronous', u'disk_min_file_size', u'disk_pickle_protocol']
 
     def get_default_sql_settings(self):
         return {

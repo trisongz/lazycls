@@ -13,8 +13,9 @@ from collections.abc import (
 )
 from contextlib import contextmanager
 from shutil import rmtree
-
-from .base import ENOVAL, Cache
+from typing import Union, List, Any, Type, Dict
+from .config import CachezConfigz
+from .base import ENOVAL, Cache, Disk
 
 
 def _make_compare(seq_op, doc):
@@ -72,14 +73,16 @@ class Deque(Sequence):
     [3, 2, 1, 0, 0, -1, -2, -3]
     """
 
-    def __init__(self, iterable=(), directory=None):
+    def __init__(self, iterable=(), directory: str = None, filename: str = None, table_name: str = CachezConfigz.default_table, **kwargs):
         """Initialize deque instance.
         If directory is None then temporary directory created. The directory
         will *not* be automatically removed.
         :param iterable: iterable of items to append to deque
         :param directory: deque directory (default None)
+        :param str filename: name prefix for cache file. will be prefixed to `_cache.db`
+        :param str table_name: the inital table to be used
         """
-        self._cache = Cache(directory, eviction_policy='none')
+        self._cache = Cache(directory = directory, filename = filename, table_name = table_name, eviction_policy='none', **kwargs)
         self.extend(iterable)
 
     @classmethod
@@ -536,6 +539,22 @@ class Deque(Sequence):
         """
         with self._cache.transact(retry=True):
             yield
+    
+    def save(self, path: str = None, compressed: bool = False):
+        return self._cache.save(path, compressed=compressed)
+    
+    async def async_save(self, path: str = None, compressed: bool = False):
+        return await self._cache.async_save(path, compressed=compressed)
+
+    @classmethod
+    def load(cls, src_path: str, directory: str, table_name: str = CachezConfigz.default_table, **settings) -> 'Deque':
+        _cache = Cache.load(src_path = src_path, directory = directory, table_name = table_name, **settings)
+        return Deque.fromcache(_cache)
+    
+    @classmethod
+    async def async_load(cls, src_path: str, directory: str, table_name: str = CachezConfigz.default_table, **settings) -> 'Deque':
+        _cache = await Cache.async_load(src_path = src_path, directory = directory, table_name = table_name, **settings)
+        return Deque.fromcache(_cache)
 
 
 class Index(MutableMapping):
@@ -1010,3 +1029,19 @@ class Index(MutableMapping):
         """
         name = type(self).__name__
         return '{0}({1!r})'.format(name, self.directory)
+    
+    def save(self, path: str = None, compressed: bool = False):
+        return self._cache.save(path, compressed=compressed)
+    
+    async def async_save(self, path: str = None, compressed: bool = False):
+        return await self._cache.async_save(path, compressed=compressed)
+
+    @classmethod
+    def load(cls, src_path: str, directory: str, table_name: str = CachezConfigz.default_table, **settings) -> 'Index':
+        _cache = Cache.load(src_path = src_path, directory = directory, table_name = table_name, **settings)
+        return Index.fromcache(_cache)
+    
+    @classmethod
+    async def async_load(cls, src_path: str, directory: str, table_name: str = CachezConfigz.default_table, **settings) -> 'Index':
+        _cache = await Cache.async_load(src_path = src_path, directory = directory, table_name = table_name, **settings)
+        return Index.fromcache(_cache)
