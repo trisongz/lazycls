@@ -4,11 +4,13 @@ Performance Utilz
 import time
 import anyio
 import multiprocessing
-from typing import Callable, Dict, List, Any, Union, Iterable, Generator, Awaitable, Optional, Coroutine
+from functools import wraps, partial
+
+from typing import Callable, Dict, List, Any, Union, Iterable, Generator, Optional
 
 
-from .wrapz import *
-from .helpers import get_logger
+from .utils import *
+from ..helpers import get_logger
 
 try:
     import trio
@@ -137,7 +139,7 @@ def AsyncTaskGroup(process: Callable, verbose: bool = False, timed: bool = False
     async def task_group_process(wrapped_func):
         process_func = process
         if not iscoroutinefunction(process_func):
-            process_func = sync_to_async_wrap(process_func)
+            process_func = AsyncFunction(process_func)
 
         async with anyio.create_task_group() as tg:
             for item in await wrapped_func():
@@ -147,7 +149,7 @@ def AsyncTaskGroup(process: Callable, verbose: bool = False, timed: bool = False
         @wraps(func)
         def async_task_group(*args, **kwargs):
             if not iscoroutinefunction(func): 
-                wrapped_func = sync_to_async_wrap(func)
+                wrapped_func = AsyncFunction(func)
             else: 
                 wrapped_func = partial(func, *args, **kwargs)
 

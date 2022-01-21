@@ -4,7 +4,7 @@ from lazy.types import *
 from lazy.types.pyd import ByteSize
 from lazy.models import BaseCls
 from lazy.configz import ConfigCls
-
+from lazy.utils import get_logger
 
 # https://phiresky.github.io/blog/2020/sqlite-performance-tuning/
 # https://blog.devart.com/increasing-sqlite-performance.html
@@ -20,6 +20,8 @@ print(CachezConfigz.dict())
 
 """
 
+logger = get_logger('cachez')
+
 class SqlConfig(BaseCls):
     mode: str = ''
     settings: Dict[str, Any] = {}
@@ -31,6 +33,7 @@ class CachezConfigz(ConfigCls):
     sqlmode: str = 'default' # default / standard / perf / optimized
     default_table: str = 'Cache'
     serializer: str = 'dill' # dill / pickle
+    dataset_mode: bool = False # if enabled, will start Index at 0 rather than 500 trill
 
     default_compression_level: int = 3
     standard_compression_level: int = 5
@@ -61,6 +64,12 @@ class CachezConfigz(ConfigCls):
         if hasattr(self, key): return getattr(self, key, default)
         if hasattr(self, f'{self.sqlmode}_{key}'): return getattr(self, f'{self.sqlmode}_{key}', default)
         return default
+    
+    @property
+    def start_index_n(self):
+        if not self.dataset_mode: return 500000000000000
+        logger.info('Dataset mode is Enabled. Index will start at 0')
+        return 0
 
     @property
     def default_keys(self):

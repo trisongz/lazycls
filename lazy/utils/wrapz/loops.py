@@ -40,7 +40,7 @@ def get_loop():
     return _LOOP
 
 
-def async_run(coro: Awaitable[T], timeout=30) -> T:
+def asyncio_run(coro: Awaitable[T], timeout=30) -> T:
     """
     Runs the coroutine in an event loop running on a background thread,
     and blocks the current thread until it returns a result.
@@ -53,7 +53,7 @@ def async_run(coro: Awaitable[T], timeout=30) -> T:
     return asyncio.run_coroutine_threadsafe(coro, _LOOP).result(timeout=timeout)
 
 
-def async_gather(*futures, return_exceptions=False):
+def asyncio_gather(*futures, return_exceptions=False):
     """
     A version of asyncio.gather that runs on the internal event loop
     """
@@ -63,7 +63,7 @@ def async_gather(*futures, return_exceptions=False):
 
 __all__ = (
     'get_loop',
-    'async_run',
-    'async_gather',
+    'asyncio_run',
+    'asyncio_gather',
     '_LOOP_ACTIVE'
 )

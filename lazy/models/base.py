@@ -18,6 +18,10 @@ class OrJson:
 class BaseCls(BaseModel):
     class Config:
         arbitrary_types_allowed = True
+        extra = 'allow'
+        json_loads = OrJson.loads
+        json_dumps = OrJson.dumps
+
     
     def get(self, name, default: Any = None):
         return getattr(self, name, default)

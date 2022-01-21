@@ -3,6 +3,7 @@ Handler to check Class Imports
 """
 import os
 import sys
+import shlex
 import importlib
 import subprocess
 import pkg_resources
@@ -50,7 +51,8 @@ class PkgInstall:
         if sys.platform.startswith('darwin'):
             b = cls.mac + ' ' + binary
             b = b.replace('[flags]', flag_str)
-        return [i.strip() for i in b.split(' ') if i.strip()]
+        return shlex.split(b)
+        #return [i.strip() for i in b.split(' ') if i.strip()]
         
 
 
@@ -227,6 +229,24 @@ class LibType(type):
     @staticmethod
     def reload_module(module: ModuleType):
         return importlib.reload(module)
+    
+    @staticmethod
+    def get_cwd(*paths, string: bool = True) -> Union[str, pathlib.Path]:
+        if not paths:
+            if string: return pathlib.Path.cwd().as_posix()
+            return pathlib.Path.cwd()
+        if string: return pathlib.Path.cwd().joinpath(*paths).as_posix()
+        return pathlib.Path.cwd().joinpath(*paths)
+    
+    @staticmethod
+    def run_cmd(cmd, raise_error: bool = True):
+        try:
+            out = subprocess.check_output(cmd, shell=True)
+            if isinstance(out, bytes): out = out.decode('utf8')
+            return out.strip()
+        except Exception as e:
+            if not raise_error: return ""
+            raise e
 
     def __getattr__(cls, key):
         """

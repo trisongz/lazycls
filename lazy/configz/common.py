@@ -75,11 +75,13 @@ class EmailBaseConfigCls(ConfigCls):
     reset_token_expire_hrs: Optional[int] = 48
     templates_dir: Optional[PathStr] = './email-templates'
     enabled: Optional[bool] = False
-    smtp_config: Optional[SMTPEmailBaseConfigCls] = Field(default_factory = SMTPEmailBaseConfigCls)
 
     class Config:
         env_prefix = "EMAILS_"
 
+    @property
+    def smtp_config(self):
+        return SMTPEmailBaseConfigCls
 
 class AppBaseConfigCls(ConfigCls):
     title: Optional[str] = 'Lazy App'
@@ -116,7 +118,7 @@ class AppBaseConfigCls(ConfigCls):
     first_superuser_pw: Optional[str] = None # Don't use this unless necessary
     first_superuser_pw_b64: Optional[Base64] = None
     first_superuser_pw_bgz: Optional[Base64Gzip] = None
-    init_seed_data: Optional[Json] = {} # Json format
+    init_seed_data: Optional[Json] = '{}' #  = {} # Json format
     init_seed_data_b64: Optional[JsonB64Str] = {} # Json in Base64 format
     init_seed_data_bgz: Optional[JsonB64GZipStr] = {} # Json in Base64 GZIP format    
 
@@ -130,7 +132,7 @@ except: FastAPI = object
 
 class FastAPIBaseConfigCls(ConfigCls):
     root_path: Optional[str] = None
-    api_prefix: Optional[str] = '/api/v1'
+    api_prefix: Optional[str] = '/'
     xapi_prefix: Optional[str] = '/xapi'
     graphql_prefix: Optional[str] = '/graphql'
     openapi_prefix: Optional[str] = ''
@@ -144,12 +146,21 @@ class FastAPIBaseConfigCls(ConfigCls):
     allowed_origins: Optional[ListStr] = ["*"]
     allowed_methods: Optional[ListStr] = ["*"]
     allowed_headers: Optional[ListStr] = ["*"]
-
-    app_config: Optional[AppBaseConfigCls] = Field(default_factory = AppBaseConfigCls)
+    app_configz: Optional[Json]
 
     class Config:
         env_prefix = "FASTAPI_"
     
+    @property
+    def app_config(self):
+        if not self.app_configz:
+            self.app_configz = AppBaseConfigCls()
+        elif isinstance(self.app_configz, dict):
+            configz = AppBaseConfigCls()
+            configz.update_config(**self.app_configz)
+            self.app_configz = configz
+        return self.app_configz
+
     @property
     def app_prefix(self) -> str:
         """
@@ -181,7 +192,11 @@ class FastAPIBaseConfigCls(ConfigCls):
         """
         Returns Dict for FastAPI(**config)
         """
-        if app_config: self.app_config.update_config(**app_config) # self.app_config = self.app_config.update_config(**app_config)
+        if app_config:
+            if isinstance(app_config, type(AppBaseConfigCls)):
+                self.app_configz = app_config
+            else:
+                self.app_config.update_config(**app_config) # self.app_config = self.app_config.update_config(**app_config)
         return {
             'title': self.app_config.title,
             'version': self.app_config.version or self.version,

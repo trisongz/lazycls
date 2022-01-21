@@ -1471,7 +1471,7 @@ class Cache:
                     assert side == 'front'
                     num -= 1
             else:
-                num = 500000000000000
+                num = CachezConfigz.start_index_n
 
             if prefix is not None:
                 db_key = '{0}-{1:015d}'.format(prefix, num)
