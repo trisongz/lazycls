@@ -9,6 +9,10 @@ from .base_imports import *
 if TYPE_CHECKING:
     import pytz
     import dateparser
+if _pytz_available:
+    import pytz
+if _dateparser_available:
+    import dateparser
 
 api_timezone = pytz.timezone(TimeZoneConfigz.desired)
 utc_timezone = pytz.timezone("UTC")

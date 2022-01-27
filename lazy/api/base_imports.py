@@ -12,11 +12,19 @@ except ImportError:
     FastAPI: object = None
     _fastapi_available = False
 
-try: import dateparser
-except ImportError: dateparser: ModuleType = None
+try: 
+    import dateparser
+    _dateparser_available = True
+except ImportError: 
+    dateparser: ModuleType = None
+    _dateparser_available = False
 
-try: import pytz
-except ImportError: pytz: ModuleType = None
+try: 
+    import pytz
+    _pytz_available = True
+except ImportError: 
+    pytz: ModuleType = None
+    _pytz_available = False
 
 try: 
     import starlette
@@ -89,6 +97,8 @@ __all__ = (
     '_starlette_available',
     '_fastapi_available',
     '_httpx_available',
+    '_pytz_available',
+    '_dateparser_available',
 )
 
     
