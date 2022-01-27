@@ -64,9 +64,10 @@ def dynamic_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
     ## Import lazy.io during runtime
     from lazy.io import get_path
     from lazy.serialize import Yaml, Json, Pkl
-
-    p = get_path(config_file_val).resolve(True)
-    if not p.exists(): return {}
+    try:
+        p = get_path(config_file_val).resolve(True)
+        if not p.exists(): return {}
+    except: return {}
     if p.extension in {'.yml', '.yaml'}: return Yaml.loads(p.read_text(encoding=encoding))
     if p.extension == '.json': return Json.loads(p.read_text(encoding=encoding))
     if p.extension in {'.pickle', '.pkl'}: return Pkl.loads(p.read_bytes())
