@@ -5,12 +5,12 @@ from .base_imports import *
 from .config import FastAPIConfigz, AppConfigz
 
 if _fastapi_available:
-    from fastapi import Header, Depends, Body, FastAPI, HTTPException, status, BackgroundTasks
-    from fastapi.responses import JSONResponse, PlainTextResponse, HTMLResponse
+    from fastapi import Header, Depends, Body, FastAPI, APIRouter, HTTPException, BackgroundTasks, status
+    from fastapi.responses import JSONResponse, PlainTextResponse, HTMLResponse, FileResponse, RedirectResponse, ORJSONResponse, StreamingResponse
     from fastapi import WebSocket, WebSocketDisconnect
 else:
-    Header, Depends, Body, FastAPI, HTTPException, status, BackgroundTasks = Callable, Callable, Callable, object, object, object, object
-    JSONResponse, PlainTextResponse, HTMLResponse = object, object, object
+    Header, Depends, Body, FastAPI, APIRouter, HTTPException, BackgroundTasks, status = Callable, Callable, Callable, object, object, object, object, object
+    JSONResponse, PlainTextResponse, HTMLResponse, FileResponse, RedirectResponse, ORJSONResponse, StreamingResponse = object, object, object, object, object, object, object
     WebSocket, WebSocketDisconnect = object, object
 
 if _starlette_available:
@@ -120,21 +120,35 @@ class WebsocketManager:
 
 
 __all__ = [
-    'AppConfigz',
-    'FastAPIConfigz',
-    'create_fastapi',
-    'Request',
-    'PlainTextResponse',
-    'JSONResponse',
-    'HTMLResponse',
+    ## FastAPI Base Imports
     'Header', 
     'Depends', 
+    'Body', 
+    'FastAPI', 
+    'APIRouter',
     'HTTPException', 
-    'status', 
-    'BackgroundTasks',
+    'BackgroundTasks', 
+    'status',
+    ## Responses
+    'JSONResponse', 
+    'PlainTextResponse', 
+    'HTMLResponse', 
+    'FileResponse', 
+    'RedirectResponse', 
+    'ORJSONResponse', 
+    'StreamingResponse',
+    ## Starlette Request
+    'Request',
+    ## Websocket
+    'WebSocket', 
+    'WebSocketDisconnect',
     'WebsocketManager',
+    ## Custom Classes / Funcs
     'create_validator',
     'create_multi_validator',
     'create_func_multi_validator_body',
     'create_func_multi_validator_request',
+    'AppConfigz',
+    'FastAPIConfigz',
+    'create_fastapi',
 ]
