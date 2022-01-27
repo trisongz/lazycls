@@ -22,15 +22,15 @@ DefaultHeaders = {
 }
 
 class TimeZoneConfigz(ConfigCls):
-    desired: Optional[str] = 'America/Chicago'
-    tz_format: Optional[str] = '%Y-%m-%dT%H:%M:%SZ'
+    desired: str = 'America/Chicago'
+    tz_format: str = '%Y-%m-%dT%H:%M:%SZ'
 
 class HttpConfigz(ConfigCls):
     base_url: str = ""
     timeout: float = 30.0
     keep_alive: int = 50
     max_connect: int = 200
-    default_headers: Optional[Json] = json.dumps(DefaultHeaders)
+    default_headers: Json = json.dumps(DefaultHeaders)
     module_name: str = 'lazy'
     
     @property
