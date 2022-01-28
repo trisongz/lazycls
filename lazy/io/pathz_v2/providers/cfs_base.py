@@ -178,6 +178,7 @@ class BaseAccessor(NormalAccessor):
     modified: Callable = create_method_fs(CFS, 'modified')
     url: Callable = create_method_fs(CFS, 'url')
     ukey: Callable = create_method_fs(CFS, 'ukey')
+    setxattr: Callable = create_method_fs(CFS, 'setxattr')
     invalidate_cache: Callable = create_method_fs(CFS, 'invalidate_cache')
     
     filesys: ClassVar = CFS.fs
@@ -245,6 +246,7 @@ class BaseAccessor(NormalAccessor):
         cls.replace : Callable = create_method_fs(cls.CFS, 'rename')
         cls.remove : Callable = create_method_fs(cls.CFS, 'rm')
         cls.modified: Callable = create_method_fs(cls.CFS, 'modified')
+        cls.setxattr: Callable = create_method_fs(cls.CFS, 'setxattr')
         cls.url: Callable = create_method_fs(cls.CFS, 'url')
         cls.ukey: Callable = create_method_fs(cls.CFS, 'ukey')
         cls.invalidate_cache: Callable = create_method_fs(cls.CFS, 'invalidate_cache')

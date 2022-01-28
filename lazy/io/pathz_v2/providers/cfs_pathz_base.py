@@ -1303,6 +1303,9 @@ class PathzCFSPath(Path, PathzCFSPurePath):
     def url(self, **kwargs):
         return self._accessor.url(self._cloudpath, **kwargs)
     
+    def setxattr(self, **kwargs):
+        return self._accessor.setxattr(self._cloudpath, **kwargs)
+    
     async def async_url(self, **kwargs):
         return await self._accessor.async_url(self._cloudpath, **kwargs)
     
