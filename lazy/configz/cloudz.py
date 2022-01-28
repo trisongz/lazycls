@@ -60,6 +60,7 @@ class CloudAuthz(ConfigCls):
     minio_secret_key: Optional[str] = ""
     minio_access_token: Optional[str] = ""
     minio_config: Optional[pyd.Json] = None
+    minio_signature_ver: str = 's3v4'
 
     """
     S3-Compatiable Generic

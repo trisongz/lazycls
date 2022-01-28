@@ -10,17 +10,19 @@ from .cloud_static import _ASYNC_SYNTAX_MAPPING
 if TYPE_CHECKING:
     from lazy.io.pathz_v2.base import PathzPath
 
-URI_PREFIXES = ('gs://', 's3://', 'minio://', 's3compat://')
-_URI_SCHEMES = frozenset(('gs', 's3', 'minio', 's3compat'))
+URI_PREFIXES = ('gs://', 's3://', 'minio://', 'mio://', 's3compat://')
+_URI_SCHEMES = frozenset(('gs', 's3', 'minio', 'mio', 's3compat'))
 _URI_MAP_ROOT = {
     'gs://': '/gs/',
     's3://': '/s3/',
+    'mio://': '/minio/',
     'minio://': '/minio/',
     's3compat://': '/s3compat/'
 }
 _PROVIDER_MAP = {
     'gs': 'GoogleCloudStorage',
     's3': 'AmazonS3',
+    'mio': 'MinIO',
     'minio': 'MinIO',
     's3compat': 'S3Compatible'
 }

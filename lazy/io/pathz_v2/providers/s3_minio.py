@@ -9,6 +9,7 @@ from .cfs_pathz_base import *
 
 class PathzMinioPurePath(PathzCFSPurePath):
     _prefix: str = 'minio'
+    _posix_prefix: str = 's3'
     _provider: str = 'Minio'
     _win_pathz: ClassVar = 'PurePathzMinioWindowsPath'
     _posix_pathz: ClassVar = 'PurePathzMinioPosixPath'
@@ -40,7 +41,8 @@ class PathzMinioPath(PathzCFSPath):
     _flavour = _pathz_windows_flavour if os.name == 'nt' else _pathz_posix_flavour
     _accessor: AccessorLike = None
     _pathlike = posixpath
-    _prefix = 's3'
+    _prefix = 'minio'
+    _posix_prefix = 's3'
     _provider = 'Minio'
 
     _win_pathz: ModuleType = 'PathzMinioWindowsPath'
@@ -63,6 +65,13 @@ class PathzMinioPath(PathzCFSPath):
         self._init()
         return self
 
+    @property
+    def _cloudpath(self) -> str:
+        """
+        Returns the `__fspath__` string representation without the uri_scheme
+        """
+        if self._prefix in self.parts[0]: return self._pathlike.join(*self.parts[1:])
+        return self._pathlike.join(*self.parts)
 
 class PathzMinioPosixPath(PosixPath, PathzMinioPath, PurePathzMinioPosixPath):
     __slots__ = ()

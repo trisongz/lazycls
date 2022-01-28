@@ -76,10 +76,11 @@ class CFSType(type):
             _config['key'] = authz.minio_access_key
             _config['secret'] = authz.minio_secret_key
         elif authz.minio_access_token: _config['token'] = authz.minio_access_token
-        _config['client_kwargs'] = {'endpoint_url': authz.minio_endpoint}
-        if authz.minio_config: _config['config_kwargs'] = authz.minio_config
-
-        cls.fs = s3fs.S3FileSystem(**_config)
+        _config['client_kwargs'] = {'endpoint_url': authz.minio_endpoint, 'region_name': authz.aws_region}
+        #if authz.minio_config: 
+        _config['config_kwargs'] = authz.minio_config or {}
+        _config['config_kwargs']['signature_version'] = authz.minio_signature_ver
+        cls.fs = s3fs.S3FileSystem(asynchronous=False, **_config)
         cls.fsa = rewrite_async_syntax(s3fs.S3FileSystem(asynchronous=True, **_config))
 
     #@classmethod
