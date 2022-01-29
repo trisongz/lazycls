@@ -82,7 +82,9 @@ class ConfigCls(BaseSettings, metaclass=ConfigClsMeta):
     class Config:
         @classmethod
         def customise_sources(cls, init_settings: SettingsSourceCallable, env_settings: SettingsSourceCallable, file_secret_settings: SettingsSourceCallable) -> Tuple[SettingsSourceCallable, ...]:
-            return init_settings, dynamic_config_settings_source, env_settings, file_secret_settings
+            if os.getenv("LAZY_ENABLE_CONFIG_SOURCE"):
+                return init_settings, dynamic_config_settings_source, env_settings, file_secret_settings
+            return init_settings, env_settings, file_secret_settings
         
         auto_init = False
         env_prefix = ""
