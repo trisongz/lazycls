@@ -33,18 +33,30 @@ class DBBaseConfigCls(ConfigCls):
 class PostgresConfigz(DBBaseConfigCls):
     username: Optional[str] = 'postgres'
     database: Optional[str] = 'postgres'
+    
+    class Config:
+        env_prefix = "POSTGRES_"
 
 class MysqlConfigz(DBBaseConfigCls):
     port: Optional[int] = 3306
     username: Optional[str] = 'mysql'
     database: Optional[str] = 'mysql'
+
+    class Config:
+        env_prefix = "MYSQL_"
     
 class RedisConfigz(DBBaseConfigCls):
     port: Optional[int] = 6379
     database: Optional[int] = 0
 
+    class Config:
+        env_prefix = "REDIS_"
+
 class ElasticsearchConfigz(DBBaseConfigCls):
     port: Optional[int] = 9200
+    
+    class Config:
+        env_prefix = "ELASTICSEARCH_"
 
 
 """

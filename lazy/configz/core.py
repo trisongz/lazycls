@@ -68,11 +68,13 @@ def dynamic_config_settings_source(settings: BaseSettings) -> Dict[str, Any]:
         p = get_path(config_file_val).resolve(True)
         if not p.exists(): return {}
     except: return {}
-    if p.extension in {'.yml', '.yaml'}: return Yaml.loads(p.read_text(encoding=encoding))
-    if p.extension == '.json': return Json.loads(p.read_text(encoding=encoding))
-    if p.extension in {'.pickle', '.pkl'}: return Pkl.loads(p.read_bytes())
-    from dotenv import dotenv_values
-    return dotenv_values(p.as_posix(), encoding=encoding)
+    try:
+        if p.extension in {'.yml', '.yaml'}: return Yaml.loads(p.read_text(encoding=encoding))
+        if p.extension == '.json': return Json.loads(p.read_text(encoding=encoding))
+        if p.extension in {'.pickle', '.pkl'}: return Pkl.loads(p.read_bytes())
+        from dotenv import dotenv_values
+        return dotenv_values(p.as_posix(), encoding=encoding)
+    except: return {}
 
 
 class ConfigCls(BaseSettings, metaclass=ConfigClsMeta):
