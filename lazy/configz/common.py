@@ -30,12 +30,16 @@ class DBBaseConfigCls(ConfigCls):
     config: Optional[DictStr] = None
     database: Optional[str] = None
 
+    class Config:
+        auto_init = False
+
 class PostgresConfigz(DBBaseConfigCls):
     username: Optional[str] = 'postgres'
     database: Optional[str] = 'postgres'
     
     class Config:
         env_prefix = "POSTGRES_"
+        auto_init = False
 
 class MysqlConfigz(DBBaseConfigCls):
     port: Optional[int] = 3306
@@ -44,6 +48,7 @@ class MysqlConfigz(DBBaseConfigCls):
 
     class Config:
         env_prefix = "MYSQL_"
+        auto_init = False
     
 class RedisConfigz(DBBaseConfigCls):
     port: Optional[int] = 6379
@@ -51,12 +56,14 @@ class RedisConfigz(DBBaseConfigCls):
 
     class Config:
         env_prefix = "REDIS_"
+        auto_init = False
 
 class ElasticsearchConfigz(DBBaseConfigCls):
     port: Optional[int] = 9200
     
     class Config:
         env_prefix = "ELASTICSEARCH_"
+        auto_init = False
 
 
 """
@@ -80,6 +87,7 @@ class SMTPEmailBaseConfigCls(ConfigCls):
 
     class Config:
         env_prefix = "SMTP_"
+        auto_init = False
 
 class EmailBaseConfigCls(ConfigCls):
     from_email: Optional[str] = None
@@ -90,6 +98,7 @@ class EmailBaseConfigCls(ConfigCls):
 
     class Config:
         env_prefix = "EMAILS_"
+        auto_init = False
 
     @property
     def smtp_config(self):
