@@ -52,7 +52,7 @@ class PathzS3Path(PathzCFSPath):
         self._fileio = None
 
     def __new__(cls, *parts, **kwargs):
-        if cls is PathzS3Path or issubclass(PathzS3Path): 
+        if cls is PathzS3Path or issubclass(cls, PathzS3Path): 
             cls = cls._win_pathz if os.name == 'nt' else cls._posix_pathz
             cls = globals()[cls]
         self = cls._from_parts(parts, init=False)

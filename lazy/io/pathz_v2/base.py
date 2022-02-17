@@ -3,6 +3,7 @@ from __future__ import annotations
 from lazy.serialize import Serialize
 from stat import S_ISDIR, S_ISLNK, S_ISREG, S_ISSOCK, S_ISBLK, S_ISCHR, S_ISFIFO
 from typing import ClassVar
+from hashlib import md5
 
 from .types import *
 from .base_imports import *
@@ -18,6 +19,24 @@ def scandir_sync(*args, **kwargs) -> Iterable[EntryWrapper]:
 Paths = Union[Path, PathLike, str]
 close = func_to_async_func(os.close)
 sync_close = os.close
+
+
+
+def generate_checksum(p: 'PathzPath'):
+    with p.open('rb') as f:
+        file_hash = md5()
+        chunk = f.read(8192)
+        while chunk:
+            file_hash.update(chunk)
+            chunk = f.read(8192)
+    return file_hash.hexdigest()
+
+def calc_etag(inputfile: 'PathzPath', partsize: int = 8388608):
+    md5_digests = []
+    with inputfile.open('rb') as f:
+        for chunk in iter(lambda: f.read(partsize), b''):
+            md5_digests.append(md5(chunk).digest())
+    return md5(b''.join(md5_digests)).hexdigest() + '-' + str(len(md5_digests))
 
 
 class _PathzAccessor(NormalAccessor):
@@ -173,8 +192,15 @@ class PathzPath(Path, PathzPurePath):
 
     @property
     def _path(self) -> str:
-        return str(self)
+        return self._cloudstr if self.is_cloud else str(self)
     
+    @property
+    def checksum(self):
+        return generate_checksum(self)
+    
+    @property
+    def etag(self):
+        return calc_etag(self)
 
     @property
     def _cloudpath(self) -> str:
@@ -220,7 +246,7 @@ class PathzPath(Path, PathzPurePath):
 
     @property
     def string(self) -> str:
-        return self.posix_
+        return self._cloudstr if self.is_cloud else self.posix_
 
     
     @property
@@ -565,6 +591,35 @@ class PathzPath(Path, PathzPurePath):
         except FileNotFoundError:
             if not missing_ok: raise
 
+    def rm(self, **kwargs):
+        """
+        Remove this file or dir
+        """
+        if self.is_dir: return self.rmdir(**kwargs)
+        
+        return self._accessor.remove(self)
+    
+    async def async_rm(self, **kwargs):
+        """
+        Remove this file or dir
+        """
+        if self.is_dir: return await self.async_rmdir(**kwargs)
+        await self._accessor.async_remove(self)
+
+    def rm_file(self, **kwargs):
+        """
+        Remove this file 
+        """
+        
+        self._accessor.remove(self)
+    
+    async def async_rm_file(self, **kwargs):
+        """
+        Remove this file 
+        """
+        
+        return await self._accessor.async_remove(self)
+
     def rmdir(self, force: bool = False, recursive: bool = True, skip_errors: bool = True):
         """
         Remove this directory.  The directory must be empty.
@@ -577,6 +632,71 @@ class PathzPath(Path, PathzPurePath):
         Remove this directory.  The directory must be empty.
         """
         await self._accessor.async_rmdir(self)
+
+    def cat(self, as_bytes: bool = False, **kwargs):
+        """
+        Fetch paths’ contents
+        """
+        return self.read_bytes() if as_bytes else self.read_text()
+    
+    async def async_cat(self, as_bytes: bool = False, **kwargs):
+        """
+        Fetch paths’ contents
+        """
+        if as_bytes: return await self.async_read_bytes()
+        return await self.async_read_text()
+    
+    def cat_file(self, as_bytes: bool = False, **kwargs):
+        """
+        """
+        return self.cat(as_bytes, **kwargs)
+    
+    async def async_cat_file(self, as_bytes: bool = False, **kwargs):
+        """
+        Parameters
+        start, end: int
+            Bytes limits of the read. If negative, backwards from end, like usual python slices. Either can be None for start or end of file, respectively
+
+        kwargs: passed to ``open()``.
+        """
+        return await self.async_cat(as_bytes, **kwargs)
+
+
+    def pipe(self, value: Union[bytes, str], **kwargs):
+        """
+        Put value into path
+
+        (counterpart to cat)
+        """
+        if not isinstance(value, bytes): value = value.encode('UTF-8')
+        return self.write_bytes(value, **kwargs)
+
+    async def async_pipe(self, value: Union[bytes, str], **kwargs):
+        """
+        Put value into path
+
+        (counterpart to cat)
+        """
+        if not isinstance(value, bytes): value = value.encode('UTF-8')
+        return await self.async_write_bytes(value, **kwargs)
+
+    def pipe_file(self, value: Union[bytes, str], **kwargs):
+        """
+        Put value into path
+
+        (counterpart to cat)
+        """
+        if not isinstance(value, bytes): value = value.encode('UTF-8')
+        return self.write_bytes(value, **kwargs)
+
+    async def async_pipe_file(self, value: Union[bytes, str], **kwargs):
+        """
+        Put value into path
+
+        (counterpart to cat)
+        """
+        if not isinstance(value, bytes): value = value.encode('UTF-8')
+        return await self.async_write_bytes(value, **kwargs)
 
     def link_to(self, target: str):
         """

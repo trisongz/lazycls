@@ -156,18 +156,28 @@ class BaseAccessor(NormalAccessor):
     exists: Callable = create_staticmethod(CFS, 'exists')
     is_dir: Callable = create_staticmethod(CFS, 'isdir')
     is_file: Callable = create_staticmethod(CFS, 'isfile')
+    copy: Callable = create_staticmethod(CFS, 'copy')
     copy_file: Callable = create_staticmethod(CFS, 'cp_file')
     get_file: Callable = create_staticmethod(CFS, 'get_file')
     put_file: Callable = create_staticmethod(CFS, 'put_file')
     metadata: Callable = create_staticmethod(CFS, ['metadata', 'info'])
+    checksum: Callable = create_staticmethod(CFS, 'checksum')
+
+    get: Callable = create_staticmethod(CFS, 'get')
 
     open: Callable = create_method_fs(CFS, 'open')
     listdir: Callable = create_method_fs(CFS, 'ls')    
     glob: Callable = create_method_fs(CFS, 'glob')
+    find: Callable = create_method_fs(CFS, 'find')
     touch: Callable = create_method_fs(CFS, 'touch')
-    copy: Callable = create_method_fs(CFS, 'copy')
-    get: Callable = create_method_fs(CFS, 'get')
+    cat: Callable = create_method_fs(CFS, 'cat')
+    cat_file: Callable = create_method_fs(CFS, 'cat_file')
+    
+    
     put: Callable = create_method_fs(CFS, 'put')
+    pipe: Callable = create_method_fs(CFS, 'pipe')
+    pipe_file: Callable = create_method_fs(CFS, 'pipe_file')
+    
     mkdir: Callable = create_method_fs(CFS, 'mkdir')
     makedirs: Callable = create_method_fs(CFS, ['makedirs', 'mkdirs'])
     unlink: Callable = create_method_fs(CFS, 'rm_file')
@@ -175,6 +185,9 @@ class BaseAccessor(NormalAccessor):
     rename : Callable = create_method_fs(CFS, 'rename')
     replace : Callable = create_method_fs(CFS, 'rename')
     remove : Callable = create_method_fs(CFS, 'rm')
+    rm : Callable = create_staticmethod(CFS, 'rm')
+    rm_file : Callable = create_staticmethod(CFS, 'rm_file')
+    
     modified: Callable = create_method_fs(CFS, 'modified')
     url: Callable = create_method_fs(CFS, 'url')
     ukey: Callable = create_method_fs(CFS, 'ukey')
@@ -198,10 +211,15 @@ class BaseAccessor(NormalAccessor):
     async_info: Callable = create_async_method_fs(CFS, 'async_info')
     async_exists: Callable = create_async_method_fs(CFS, 'async_exists')
     async_glob: Callable = create_async_method_fs(CFS, 'async_glob')
+    async_find: Callable = create_async_method_fs(CFS, 'async_find')
     async_is_dir: Callable = create_async_method_fs(CFS, 'async_isdir')
     async_is_file: Callable = create_async_method_fs(CFS, 'async_is_file')
     async_copy: Callable = create_async_method_fs(CFS, 'async_copy')
     async_copy_file: Callable = create_async_method_fs(CFS, 'async_cp_file')
+
+    async_pipe: Callable = create_async_method_fs(CFS, 'async_pipe')
+    async_pipe_file: Callable = create_async_method_fs(CFS, 'async_pipe_file')
+
     async_get: Callable = create_async_method_fs(CFS, 'async_get')
     async_get_file: Callable = create_async_method_fs(CFS, 'async_get_file')
     async_put: Callable = create_async_method_fs(CFS, 'async_put')
@@ -214,6 +232,7 @@ class BaseAccessor(NormalAccessor):
     async_rmdir: Callable = create_async_method_fs(CFS, 'async_rmdir')
     async_remove: Callable = create_async_method_fs(CFS, 'async_rm')
     async_rm: Callable = create_async_method_fs(CFS, 'async_rm')
+    async_rm_file: Callable = create_async_coro(CFS, 'async_rm_file')
     async_listdir: Callable = create_async_method_fs(CFS, ['async_listdir', 'async_list_objects'])
 
     @classmethod
@@ -222,10 +241,10 @@ class BaseAccessor(NormalAccessor):
         cls.info: Callable = create_staticmethod(cls.CFS, 'info')
         cls.stat: Callable = create_staticmethod(cls.CFS, 'stat')
         cls.size: Callable = create_staticmethod(cls.CFS, 'size')
-        cls.size: Callable = create_staticmethod(cls.CFS, 'size')
         cls.exists: Callable = create_staticmethod(cls.CFS, 'exists')
         cls.is_dir: Callable = create_staticmethod(cls.CFS, 'isdir')
         cls.is_file: Callable = create_staticmethod(cls.CFS, 'isfile')
+        cls.copy: Callable = create_staticmethod(cls.CFS, 'copy')
         cls.copy_file: Callable = create_staticmethod(cls.CFS, 'cp_file')
         cls.get_file: Callable = create_staticmethod(cls.CFS, 'get_file')
         cls.put_file: Callable = create_staticmethod(cls.CFS, 'put_file')
@@ -233,10 +252,21 @@ class BaseAccessor(NormalAccessor):
 
         cls.open: Callable = create_method_fs(cls.CFS, 'open')
         cls.listdir: Callable = create_method_fs(cls.CFS, 'ls')    
-        cls.glob: Callable = create_method_fs(cls.CFS, 'glob')
+        cls.glob: Callable = create_staticmethod(cls.CFS, 'glob')
+        cls.get: Callable = create_staticmethod(cls.CFS, 'get')
+        
+        cls.checksum: Callable = create_method_fs(cls.CFS, 'checksum')
+        cls.cat: Callable = create_staticmethod(cls.CFS, 'cat')
+        cls.cat_file: Callable = create_staticmethod(cls.CFS, 'cat_file')
+        
+        cls.pipe: Callable = create_staticmethod(cls.CFS, 'pipe')
+        cls.pipe_file: Callable = create_staticmethod(cls.CFS, 'pipe_file')
+    
+
+        cls.find: Callable = create_method_fs(cls.CFS, 'find')
         cls.touch: Callable = create_method_fs(cls.CFS, 'touch')
-        cls.copy: Callable = create_method_fs(cls.CFS, 'copy')
-        cls.get: Callable = create_method_fs(cls.CFS, 'get')
+        
+        
         cls.put: Callable = create_method_fs(cls.CFS, 'put')
         cls.mkdir: Callable = create_method_fs(cls.CFS, 'mkdir')
         cls.makedirs: Callable = create_method_fs(cls.CFS, ['makedirs', 'mkdirs'])
@@ -244,6 +274,9 @@ class BaseAccessor(NormalAccessor):
         cls.rmdir: Callable = create_method_fs(cls.CFS, 'rmdir')
         cls.rename : Callable = create_method_fs(cls.CFS, 'rename')
         cls.replace : Callable = create_method_fs(cls.CFS, 'rename')
+        cls.rm : Callable = create_staticmethod(cls.CFS, 'rm')
+        cls.rm_file : Callable = create_staticmethod(cls.CFS, 'rm_file')
+        
         cls.remove : Callable = create_method_fs(cls.CFS, 'rm')
         cls.modified: Callable = create_method_fs(cls.CFS, 'modified')
         cls.setxattr: Callable = create_method_fs(cls.CFS, 'setxattr')
@@ -267,7 +300,16 @@ class BaseAccessor(NormalAccessor):
 
         cls.async_info: Callable = create_async_method_fs(cls.CFS, 'async_info')
         cls.async_exists: Callable = create_async_method_fs(cls.CFS, 'async_exists')
-        cls.async_glob: Callable = create_async_method_fs(cls.CFS, 'async_glob')
+
+        cls.async_glob: Callable = create_async_coro(cls.CFS, 'async_glob')
+        cls.async_glob: Callable = create_async_method_fs(cls.CFS, 'async_find')
+        
+        cls.async_cat: Callable = create_async_coro(cls.CFS, 'async_cat')
+        cls.async_cat_file: Callable = create_async_coro(cls.CFS, 'async_cat_file')
+        
+        cls.async_pipe: Callable = create_async_coro(cls.CFS, 'async_pipe')
+        cls.async_pipe_file: Callable = create_async_coro(cls.CFS, 'async_pipe_file')
+        
         cls.async_is_dir: Callable = create_async_method_fs(cls.CFS, 'async_isdir')
         cls.async_is_file: Callable = create_async_method_fs(cls.CFS, 'async_is_file')
         cls.async_copy: Callable = create_async_method_fs(cls.CFS, 'async_copy')
@@ -281,6 +323,7 @@ class BaseAccessor(NormalAccessor):
         cls.async_mkdir: Callable = create_async_method_fs(cls.CFS, 'async_mkdir')
         cls.async_makedirs: Callable = create_async_method_fs(cls.CFS, 'async_makedirs')
         cls.async_unlink: Callable = create_async_method_fs(cls.CFS, 'async_rm_file')
+        cls.async_rm_file: Callable = create_async_coro(cls.CFS, 'async_rm_file')
         cls.async_rmdir: Callable = create_async_method_fs(cls.CFS, 'async_rmdir')
         cls.async_remove: Callable = create_async_method_fs(cls.CFS, 'async_rm')
         cls.async_rm: Callable = create_async_method_fs(cls.CFS, 'async_rm')

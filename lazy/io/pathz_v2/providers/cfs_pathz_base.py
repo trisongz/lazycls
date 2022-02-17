@@ -85,9 +85,12 @@ class PathzCFSPath(Path, PathzCFSPurePath):
         self._init()
         return self
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}("{self._path}")'
+
     @property
     def _path(self) -> str:
-        return str(self)
+        return self._cloudstr if self.is_cloud else str(self)
     
     @property
     def _cloudpath(self) -> str:
@@ -110,7 +113,7 @@ class PathzCFSPath(Path, PathzCFSPurePath):
         """
         Returns the `__fspath__` string representation without the uri_scheme
         """
-        return self._prefix + '://' + self._bucket
+        return f'{self._prefix}://{self._bucket}'
     
     @property
     def _pathkeys(self) -> str:
@@ -179,6 +182,28 @@ class PathzCFSPath(Path, PathzCFSPurePath):
         return self._accessor.ukey(self._cloudpath)
     
     @property
+    def info_(self):
+        """
+        Return info of path
+        """
+        return self._accessor.info(path=self._path)
+
+    @property
+    def metadata_(self):
+        """
+        Return metadata of path
+        """
+        return self._accessor.metadata(self._cloudpath)
+    
+    @property
+    def path_info_(self):
+        """
+        Return info of path
+        """
+        return self._accessor.info(path=self._cloudpath)
+    
+
+    @property
     def size_(self) -> Optional[Union[float, int]]:
         """
         Size in bytes of file
@@ -198,19 +223,45 @@ class PathzCFSPath(Path, PathzCFSPurePath):
         #return r.get('updated')
     
     @property
-    def metadata_(self):
-        """
-        Return metadata of path
-        """
-        return self._accessor.metadata(self._cloudpath)
+    def checksum(self):
+        return self._accessor.checksum(path=self._path)
+
+    @property
+    def last_modified(self) -> 'datetime.datetime':
+        ts = self.info_.get('LastModified')
+        if ts: return ts
+        return self.modified_
     
     @property
-    def path_info_(self):
+    def etag(self): 
         """
-        Return info of path
+        returns the file etag
         """
-        return self._accessor.info(path=self._cloudpath)
+        rez = self.path_info_.get('ETag')
+        if rez: rez = rez.replace('"', '').strip()
+        return rez
     
+    @property
+    def file_size(self):
+        """
+        returns the total file size in bytes
+        """
+        return self.path_info_.get('Size')
+
+    @property
+    def content_type(self):
+        """
+        returns the ContentType attribute of the file
+        """
+        return self.path_info_.get('ContentType')
+
+    @property
+    def object_type(self):
+        """
+        returns the Type attribute of the file
+        """
+        return self.path_info_.get('type')
+
     @property
     def is_cloud(self) -> bool:
         if not self._prefix: return False
@@ -535,6 +586,61 @@ class PathzCFSPath(Path, PathzCFSPurePath):
         except FileNotFoundError:
             if not missing_ok: raise
 
+    def rm(self, recursive: bool = False, maxdepth: int = None, missing_ok: bool = False):
+        """
+        Remove this file.
+        If the path is a directory, use rmdir() instead.
+        """
+        try: self._accessor.rm(self._path, recursive, maxdepth)
+        except:
+            if not missing_ok: raise
+    
+
+    async def async_rm(self, recursive: bool = False, maxdepth: int = None, missing_ok: bool = False):
+        """
+        Remove this file.
+        If the path is a directory, use rmdir() instead.
+        """
+        try: self._accessor.async_rm(self._path, recursive, maxdepth)
+        except:
+            if not missing_ok: raise
+
+    def rm_file(self, missing_ok: bool = True):
+        """
+        Remove this file.
+        If the path is a directory, use rmdir() instead.
+        """
+        try: 
+            self._accessor.rm_file(self._path)
+            return True
+        except Exception as e:
+            if missing_ok: return False
+            raise e from e
+
+
+    async def async_rm_file(self, missing_ok: bool = True):
+        """
+        Remove this file.
+        If the path is a directory, use rmdir() instead.
+        """
+        try: 
+            await self._accessor.async_rm_file(self._path)
+            return True
+        except Exception as e:
+            if missing_ok: return False
+            raise e from e
+
+
+
+    async def async_unlink(self, missing_ok: bool = False):
+        """
+        Remove this file or link.
+        If the path is a directory, use rmdir() instead.
+        """
+        try: await self._accessor.async_unlink(self._cloudpath, missing_ok = missing_ok)
+        except FileNotFoundError:
+            if not missing_ok: raise
+
     def rmdir(self, force: bool = False, recursive: bool = True, skip_errors: bool = True):
         """
         Remove this directory.  The directory must be empty.
@@ -711,34 +817,161 @@ class PathzCFSPath(Path, PathzCFSPurePath):
             if name in {'.', '..'}: continue
             yield self._make_child_relpath(name)
 
-    def glob(self, pattern: str = '*') -> Iterable[Type['PathzCFSPath']]:
+    def glob(self, pattern: str = '*', as_path: bool = True) -> Iterable[Union[str, Type['PathzCFSPath']]]:
+        """Iterate over this subtree and yield all existing files (of any
+        kind, including directories) matching the given relative pattern.
+        Warning: doesn't work as expected. Use Find Instead.
+        """
+        if not pattern: raise ValueError("Unacceptable pattern: {!r}".format(pattern))
+        #if self.is_cloud:
+        glob_pattern = self._path + ('/' if self.is_dir and not self._path.endswith('/') and not pattern.startswith('/') else '') +  pattern
+        try: 
+            matches =  self._accessor.glob(glob_pattern)
+            if not matches: return matches
+            if self.is_cloud: matches = [f'{self._prefix}://{m}' for m in matches]
+            if as_path: matches = [type(self)(m) for m in matches]
+            return matches
+        except: return self.find(pattern = pattern, as_string = not as_path)
+
+    async def async_glob(self, pattern: str = '*', as_path: bool = True) -> AsyncIterable[Type['PathzCFSPath']]:
         """Iterate over this subtree and yield all existing files (of any
         kind, including directories) matching the given relative pattern.
         """
         if not pattern: raise ValueError("Unacceptable pattern: {!r}".format(pattern))
-        return self._accessor.glob(pattern)
+        glob_pattern = self._path + ('/' if self.is_dir and not self._path.endswith('/') and not pattern.startswith('/') else '') +  pattern
+        try: 
+            matches =  await self._accessor.async_glob(glob_pattern)
+            if not matches: return matches
+            if self.is_cloud: matches = [f'{self._prefix}://{m}' for m in matches]
+            if as_path: matches = [type(self)(m) for m in matches]
+            return matches
+        except: return await self.async_find(pattern = pattern, as_string = not as_path)
 
-
-    async def async_glob(self, pattern: str = '*') -> AsyncIterable[Type['PathzCFSPath']]:
-        """Iterate over this subtree and yield all existing files (of any
-        kind, including directories) matching the given relative pattern.
+    def find(self, pattern: str = "*",  as_string: bool = False, maxdepth: int = None, withdirs: bool = None, detail: bool = False) -> Union[List[str], List[Type['PathzCFSPath']]]:
         """
-        if not pattern: raise ValueError("Unacceptable pattern: {!r}".format(pattern))
-        return await self._accessor.async_glob(pattern)
+        List all files below path. Like posix find command without conditions
+        """
+        matches = self._accessor.find(path = self._cloudstr, maxdepth = maxdepth, withdirs = withdirs, detail = detail, prefix = pattern)
+        if self.is_cloud:
+            matches = [f'{self._prefix}://{m}' for m in matches]
+        if not as_string:
+            matches = [type(self)(m) for m in matches]
+        return matches
+    
+    async def async_find(self, pattern: str = "*",  as_string: bool = False, maxdepth: int = None, withdirs: bool = None, detail: bool = False) -> Union[List[str], List[Type['PathzCFSPath']]]:
+        """
+        List all files below path. Like posix find command without conditions
+        """
+        matches = await self._accessor.async_find(path = self._cloudstr, maxdepth = maxdepth, withdirs = withdirs, detail = detail, prefix = pattern)
+        if self.is_cloud:
+            matches = [f'{self._prefix}://{m}' for m in matches]
+        if not as_string:
+            matches = [type(self)(m) for m in matches]
+        return matches
 
-    def rglob(self, pattern: str) -> Iterable[Type['PathzCFSPath']]:
+    def rglob(self, pattern: str, as_path: bool = True) -> Iterable[Union[str, Type['PathzCFSPath']]]:
         """Recursively yield all existing files (of any kind, including
         directories) matching the given relative pattern, anywhere in
         this subtree.
         """
-        return self.glob(f'**/{pattern}')
+        return self.glob(pattern = f'**/{pattern}', as_path = as_path)
         
-    async def async_rglob(self, pattern: str) -> AsyncIterable[Type['PathzCFSPath']]:
+    async def async_rglob(self, pattern: str) -> AsyncIterable[Union[str, Type['PathzCFSPath']]]:
         """Recursively yield all existing files (of any kind, including
         directories) matching the given relative pattern, anywhere in
         this subtree.
         """
         return await self.async_glob(f'**/{pattern}')
+    
+    def cat(self, recursive: bool = False, on_error: str = 'raise', **kwargs):
+        """
+        Fetch paths’ contents
+        Parameters
+        recursive: bool
+            If True, assume the path(s) are directories, and get all the contained files
+
+        on_error“raise”, “omit”, “return”
+            If raise, an underlying exception will be raised (converted to KeyError if the type is in self.missing_exceptions); 
+            if omit, keys with exception will simply not be included in the output; if “return”, all keys are included in the output, 
+            but the value will be bytes or an exception instance.
+
+        kwargs: passed to cat_file
+        """
+        return self._accessor.cat(self._cloudstr, recursive, on_error, **kwargs)
+    
+    async def async_cat(self, recursive: bool = False, on_error: str = 'raise', **kwargs):
+        """
+        Fetch paths’ contents
+        Parameters
+        recursive: bool
+            If True, assume the path(s) are directories, and get all the contained files
+
+        on_error“raise”, “omit”, “return”
+            If raise, an underlying exception will be raised (converted to KeyError if the type is in self.missing_exceptions); 
+            if omit, keys with exception will simply not be included in the output; if “return”, all keys are included in the output, 
+            but the value will be bytes or an exception instance.
+
+        kwargs: passed to cat_file
+        """
+        return await self._accessor.async_cat(self._cloudstr, recursive, on_error, **kwargs)
+    
+    def cat_file(self, start: int = None, end: int = None, **kwargs):
+        """
+        Parameters
+        start, end: int
+            Bytes limits of the read. If negative, backwards from end, like usual python slices. Either can be None for start or end of file, respectively
+
+        kwargs: passed to ``open()``.
+        """
+        return self._accessor.cat_file(self._cloudstr, start = start, end = end, **kwargs)
+    
+    async def async_cat_file(self, start: int = None, end: int = None, **kwargs):
+        """
+        Parameters
+        start, end: int
+            Bytes limits of the read. If negative, backwards from end, like usual python slices. Either can be None for start or end of file, respectively
+
+        kwargs: passed to ``open()``.
+        """
+        return await self._accessor.async_cat_file(self._cloudstr, start = start, end = end, **kwargs)
+
+
+    def pipe(self, value: Union[bytes, str], **kwargs):
+        """
+        Put value into path
+
+        (counterpart to cat)
+        """
+        if not isinstance(value, bytes): value = value.encode('UTF-8')
+        return self._accessor.pipe(self._cloudstr, value = value, **kwargs)
+
+    async def async_pipe(self, value: Union[bytes, str], **kwargs):
+        """
+        Put value into path
+
+        (counterpart to cat)
+        """
+        if not isinstance(value, bytes): value = value.encode('UTF-8')
+        return await self._accessor.async_pipe(self._cloudstr, value = value, **kwargs)
+
+    def pipe_file(self, value: Union[bytes, str], **kwargs):
+        """
+        Put value into path
+
+        (counterpart to cat)
+        """
+        if not isinstance(value, bytes): value = value.encode('UTF-8')
+        return self._accessor.pipe_file(self._cloudstr, value = value, **kwargs)
+
+    async def async_pipe_file(self, value: Union[bytes, str], **kwargs):
+        """
+        Put value into path
+
+        (counterpart to cat)
+        """
+        if not isinstance(value, bytes): value = value.encode('UTF-8')
+        return await self._accessor.async_pipe_file(self._cloudstr, value = value, **kwargs)
+
 
     def absolute(self) -> Type['PathzCFSPath']:
         """Return an absolute version of this path.  This function works
@@ -910,36 +1143,56 @@ class PathzCFSPath(Path, PathzCFSPurePath):
         Copies the File to the Dir/File.
         """
         dest = self._get_pathlike(dest)
-        if dest.is_cloud:
-            return self._accessor.copy(self._cloudpath, dest._cloudpath, recursive = recursive)
-        return self._accessor.get(self._cloudpath, dest.string, recursive = recursive)
+        if dest.is_dir() and self.is_file():
+            dest = dest.joinpath(self.filename_)
+        if dest.exists() and not overwrite and dest.is_file():
+            if skip_errors: return dest
+            raise Exception(f'File {dest._path} exists')
+        if dest.is_cloud: self._accessor.copy(self._path, dest._path, recursive)
+        else: self._accessor.get(self._path, dest._path, recursive)
+        return dest
     
     async def async_copy(self, dest: PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False):
         """
         Copies the File to the Dir/File.
         """
         dest = self._get_pathlike(dest)
-        if dest.is_cloud:
-            return await self._accessor.async_copy(self._cloudpath, dest._cloudpath, recursive = recursive)
-        return await self._accessor.async_get(self._cloudpath, dest.string, recursive = recursive)
+        if await dest.async_is_dir() and await self.async_is_file():
+            dest = dest.joinpath(self.filename_)
+        if await dest.async_exists() and not overwrite and await dest.async_is_file():
+            if skip_errors: return dest
+            raise Exception(f'File {dest._path} exists')
+        if dest.is_cloud: await self._accessor.async_copy(self._cloudpath, dest._cloudpath, recursive = recursive)
+        else: await self._accessor.async_get(self._cloudpath, dest.string, recursive = recursive)
+        return dest
 
     def copy_file(self, dest: PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False):
         """
         Copies this File to the the Dest Path
         """
         dest = self._get_pathlike(dest)
-        if dest.is_cloud:
-            return self._accessor.copy_file(self._cloudpath, dest._cloudpath, recursive = recursive)
-        return self._accessor.copy_file(self._cloudpath, dest.string, recursive = recursive)
+        if dest.is_dir() and self.is_file():
+            dest = dest.joinpath(self.filename_)
+        if dest.exists() and not overwrite and dest.is_file():
+            if skip_errors: return dest
+            raise Exception(f'File {dest._path} exists')
+        if dest.is_cloud: self._accessor.copy(self._path, dest._path, recursive)
+        else: self._accessor.get(self._path, dest._path, recursive)
+        return dest
     
     async def async_copy_file(self, dest: PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False):
         """
         Copies this File to the the Dest Path
         """
         dest = self._get_pathlike(dest)
-        if dest.is_cloud:
-            return await self._accessor.async_copy_file(self._cloudpath, dest._cloudpath, recursive = recursive)
-        return await self._accessor.async_copy_file(self._cloudpath, dest.string, recursive = recursive)
+        if await dest.async_is_dir() and await self.async_is_file():
+            dest = dest.joinpath(self.filename_)
+        if await dest.async_exists() and not overwrite and await dest.async_is_file():
+            if skip_errors: return dest
+            raise Exception(f'File {dest._path} exists')
+        if dest.is_cloud: await self._accessor.async_copy(self._cloudpath, dest._cloudpath, recursive = recursive)
+        else: await self._accessor.async_get(self._cloudpath, dest.string, recursive = recursive)
+        return dest
 
     def put(self, src: PathLike, recursive: bool = False, callback: Optional[Callable] = None, **kwargs):
         """
@@ -1321,6 +1574,7 @@ class PathzCFSPath(Path, PathzCFSPurePath):
         #_f = self._accessor.open(self._cloudpath)
         return await self._accessor.async_invalidate_cache(self._cloudpath)
 
+    
 
 class PathzCFSPosixPath(PosixPath, PathzCFSPath, PurePathzCFSPosixPath):
     __slots__ = ()

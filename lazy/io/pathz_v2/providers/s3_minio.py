@@ -54,7 +54,7 @@ class PathzMinioPath(PathzCFSPath):
         self._fileio = None
 
     def __new__(cls, *parts, **kwargs):
-        if cls is PathzMinioPath or issubclass(PathzMinioPath): 
+        if cls is PathzMinioPath or issubclass(cls, PathzMinioPath): 
             cls = cls._win_pathz if os.name == 'nt' else cls._posix_pathz
             cls = globals()[cls]
         self = cls._from_parts(parts, init=False)

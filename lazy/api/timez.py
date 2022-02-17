@@ -6,19 +6,29 @@ from lazy.models.timez import TimeCls
 from .config import TimeZoneConfigz
 
 from .base_imports import *
-if TYPE_CHECKING:
-    import pytz
-    import dateparser
+
+def _require_pytz():
+    pytz = Lib.import_lib('pytz')
+    Lib.reload_module(pytz)
+
+def _require_dateparser():
+    dateparser = Lib.import_lib('dateparser')
+    Lib.reload_module(dateparser)
+
 if _pytz_available:
     import pytz
+    api_timezone = pytz.timezone(TimeZoneConfigz.desired)
+    utc_timezone = pytz.timezone("UTC")
+    dtime_now_tz = lambda: datetime.now(api_timezone)
+else:
+    api_timezone = _require_pytz
+    utc_timezone = _require_pytz
+    dtime_now_tz = _require_pytz
+
 if _dateparser_available:
     import dateparser
 
-api_timezone = pytz.timezone(TimeZoneConfigz.desired)
-utc_timezone = pytz.timezone("UTC")
-
 dtime_now = lambda: datetime.now()
-dtime_now_tz = lambda: datetime.now(api_timezone)
 dtime_now_utc = lambda: datetime.now(timezone.utc)
 
 def timer(s: float = None):
@@ -26,6 +36,7 @@ def timer(s: float = None):
 
 
 def dtime_parse(timeframe: str = '30 mins', future: bool = False):
+    if not _dateparser_available: _require_dateparser()
     if future:
         timeframe = 'in ' + timeframe
         prefer = 'future'
