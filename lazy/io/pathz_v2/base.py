@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import shutil
+
 from lazy.serialize import Serialize
 from stat import S_ISDIR, S_ISLNK, S_ISREG, S_ISSOCK, S_ISBLK, S_ISCHR, S_ISFIFO
 from typing import ClassVar
@@ -19,6 +21,7 @@ def scandir_sync(*args, **kwargs) -> Iterable[EntryWrapper]:
 Paths = Union[Path, PathLike, str]
 close = func_to_async_func(os.close)
 sync_close = os.close
+
 
 
 
@@ -47,12 +50,18 @@ class _PathzAccessor(NormalAccessor):
     listdir = os.listdir
     chmod = os.chmod
 
+    copy = shutil.copy
+    copy_file = shutil.copyfile
+
     # Async Methods
     async_stat = func_as_method_coro(os.stat)
     async_lstat = func_as_method_coro(os.lstat)
     async_open = func_as_method_coro(os.open)
     async_listdir = func_as_method_coro(os.listdir)
     async_chmod = func_as_method_coro(os.chmod)
+
+    async_copy = func_as_method_coro(shutil.copy)
+    async_copy_file = func_as_method_coro(shutil.copyfile)
 
     if hasattr(NormalAccessor, 'lchmod'):
         lchmod = NormalAccessor.lchmod
@@ -308,6 +317,13 @@ class PathzPath(Path, PathzPurePath):
     async def async_home_(self) -> PathzPath:
         return await self.async_home()
     
+    @staticmethod
+    def _get_pathlike(path: PathLike):
+        """
+        Returns the path of the file.
+        """
+        from lazy.io.pathz_v2 import get_path
+        return get_path(path)
     
     def open(self, mode: FileMode = 'r', buffering: int = -1, encoding: Optional[str] = DEFAULT_ENCODING, errors: Optional[str] = ON_ERRORS, newline: Optional[str] = NEWLINE, **kwargs) -> IO[Union[str, bytes]]:
         """
@@ -590,6 +606,69 @@ class PathzPath(Path, PathzPurePath):
         try: await self._accessor.async_unlink(self)
         except FileNotFoundError:
             if not missing_ok: raise
+
+    def copy(self, dest: PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False, **kwargs):
+        """
+        Copies the File to the Dir/File.
+        """
+        dest: 'PathzPath' = self._get_pathlike(dest)
+        if dest.is_dir() and self.is_file():
+            dest = dest.joinpath(self.filename_)
+        
+        if dest.exists() and not overwrite and dest.is_file():
+            if skip_errors: return dest
+            raise Exception(f'File {dest._path} exists')
+
+        if not dest.is_cloud:
+            self._accessor.copy(self._path, dest._path, **kwargs)
+            return dest
+        dest._accessor.put(self._path, dest._path, recursive)
+        return dest
+    
+    async def async_copy(self, dest: PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False, **kwargs):
+        dest: 'PathzPath' = self._get_pathlike(dest)
+        if await dest.async_is_dir() and self.async_is_file():
+            dest = dest.joinpath(self.filename_)
+        
+        if await dest.async_exists() and not overwrite and await dest.async_is_file():
+            if skip_errors: return dest
+            raise Exception(f'File {dest._path} exists')
+
+        if not dest.is_cloud:
+            await self._accessor.async_copy(self._path, dest._path, **kwargs)
+            return dest
+        await dest._accessor.async_put(self._path, dest._path, recursive)
+        return dest
+    
+    def copy_file(self, dest: PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False, **kwargs):
+        dest: 'PathzPath' = self._get_pathlike(dest)
+        if dest.is_dir() and self.is_file():
+            dest = dest.joinpath(self.filename_)
+        
+        if dest.exists() and not overwrite and dest.is_file():
+            if skip_errors: return dest
+            raise Exception(f'File {dest._path} exists')
+
+        if not dest.is_cloud:
+            self._accessor.copy_file(self._path, dest._path, **kwargs)
+            return dest
+        dest._accessor.put_file(self._path, dest._path, recursive)
+        return dest
+
+    async def async_copy_file(self, dest: PathLike, recursive: bool = False, overwrite: bool = False, skip_errors: bool = False, **kwargs):
+        dest: 'PathzPath' = self._get_pathlike(dest)
+        if await dest.async_is_dir() and self.async_is_file():
+            dest = dest.joinpath(self.filename_)
+        
+        if await dest.async_exists() and not overwrite and await dest.async_is_file():
+            if skip_errors: return dest
+            raise Exception(f'File {dest._path} exists')
+
+        if not dest.is_cloud:
+            await self._accessor.async_copy_file(self._path, dest._path, **kwargs)
+            return dest
+        await dest._accessor.async_put_file(self._path, dest._path, recursive)
+        return dest
 
     def rm(self, **kwargs):
         """

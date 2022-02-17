@@ -164,6 +164,7 @@ class BaseAccessor(NormalAccessor):
     checksum: Callable = create_staticmethod(CFS, 'checksum')
 
     get: Callable = create_staticmethod(CFS, 'get')
+    put: Callable = create_staticmethod(CFS, 'put')
 
     open: Callable = create_method_fs(CFS, 'open')
     listdir: Callable = create_method_fs(CFS, 'ls')    
@@ -174,7 +175,7 @@ class BaseAccessor(NormalAccessor):
     cat_file: Callable = create_method_fs(CFS, 'cat_file')
     
     
-    put: Callable = create_method_fs(CFS, 'put')
+    
     pipe: Callable = create_method_fs(CFS, 'pipe')
     pipe_file: Callable = create_method_fs(CFS, 'pipe_file')
     
@@ -220,8 +221,9 @@ class BaseAccessor(NormalAccessor):
     async_pipe: Callable = create_async_method_fs(CFS, 'async_pipe')
     async_pipe_file: Callable = create_async_method_fs(CFS, 'async_pipe_file')
 
-    async_get: Callable = create_async_method_fs(CFS, 'async_get')
-    async_get_file: Callable = create_async_method_fs(CFS, 'async_get_file')
+    async_get: Callable = create_async_coro(CFS, 'async_get')
+    async_get_file: Callable = create_async_coro(CFS, 'async_get_file')
+    
     async_put: Callable = create_async_method_fs(CFS, 'async_put')
     async_put_file: Callable = create_async_method_fs(CFS, 'async_put_file')
     async_metadata: Callable = create_async_method_fs(CFS, 'async_info')
@@ -254,6 +256,7 @@ class BaseAccessor(NormalAccessor):
         cls.listdir: Callable = create_method_fs(cls.CFS, 'ls')    
         cls.glob: Callable = create_staticmethod(cls.CFS, 'glob')
         cls.get: Callable = create_staticmethod(cls.CFS, 'get')
+        cls.put: Callable = create_staticmethod(cls.CFS, 'put')
         
         cls.checksum: Callable = create_method_fs(cls.CFS, 'checksum')
         cls.cat: Callable = create_staticmethod(cls.CFS, 'cat')
@@ -267,7 +270,6 @@ class BaseAccessor(NormalAccessor):
         cls.touch: Callable = create_method_fs(cls.CFS, 'touch')
         
         
-        cls.put: Callable = create_method_fs(cls.CFS, 'put')
         cls.mkdir: Callable = create_method_fs(cls.CFS, 'mkdir')
         cls.makedirs: Callable = create_method_fs(cls.CFS, ['makedirs', 'mkdirs'])
         cls.unlink: Callable = create_method_fs(cls.CFS, 'rm_file')
