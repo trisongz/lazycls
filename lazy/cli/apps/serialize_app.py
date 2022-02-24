@@ -38,6 +38,7 @@ lazy read replace 's3://bucket/to/config_template.yaml' --output-path '/local/pa
 
 from .base import *
 from lazy.serialize import Serializer
+from lazy.utils import get_logger
 
 __all__ = ( 
     'encodeCli',
@@ -53,6 +54,7 @@ keysCli = createCli(name = 'keys')
 readCli = createCli(name = 'read')
 writeCli = createCli(name = 'write')
 
+logger = get_logger('lazy:cli')
 
 ## Will import and run func dynamically
 def _get_path(path: str):
@@ -400,6 +402,40 @@ def create_token(
         output_path = _get_path(output_path)
         output_path.write_text(result)
         echo(output_path.as_posix())
+    else:
+        echo(result)
+
+
+@keysCli.command('supabase', short_help = "Creates a Supabase JWT KeyPair")
+def create_supabase_jwt(
+        secret: Optional[str] = Option(None),
+        expiration: Optional[int] = Option(157766400), 
+        algorithm: Optional[str] = Option("HS256"),
+        output_path: Optional[str] = Option(None),
+        is_shell: Optional[bool] = Option(False),
+        as_env: Optional[bool] = Option(False),
+        pretty: Optional[bool] = Option(True),
+    ):
+    result = Serializer.Secret.supabase_keys(secret=secret, expiration=expiration, algorithm=algorithm)
+    if is_shell and as_env and output_path:
+        output_path = _get_path(output_path)
+        with output_path.open(mode = 'a') as f:
+            f.write(f"export SUPABASE_JWT_SECRET={result['secret']}\n")
+            f.write(f"export SUPABASE_ANON_KEY={result['anon_key_jwt']['key']}\n")
+            f.write(f"export SUPABASE_SERVICE_KEY={result['service_key_jwt']['key']}\n")
+    elif is_shell and not as_env:
+        echo(f"{result['secret']} {result['anon_key_jwt']['key']} {result['service_key_jwt']['key']}")
+    elif is_shell:
+        # doesnt' really work.
+        echo(f"export SUPABASE_JWT_SECRET={result['secret']}")
+        echo(f"export SUPABASE_ANON_KEY={result['anon_key_jwt']['key']}")
+        echo(f"export SUPABASE_SERVICE_KEY={result['service_key_jwt']['key']}")
+    elif output_path:
+        output_path = _get_path(output_path)
+        output_path.write_text(result)
+        echo(output_path.as_posix())
+    elif pretty:
+        logger(result)
     else:
         echo(result)
 

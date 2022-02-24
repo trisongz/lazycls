@@ -22,7 +22,7 @@ class Yaml(SerializerCls):
     def _encode(cls, obj: Dict[Any, Any], dumper: str = Defaults.yaml_dumper, *args, default: Dict[Any, Any] = None, **kwargs) -> str: 
         _dumper = yaml.Dumper
         if dumper == 'safe': _dumper = yaml.SafeDumper
-        return yaml.dump(obj, Dumper=_dumper *args, **kwargs)
+        return yaml.dump(obj, Dumper=_dumper, *args, **kwargs)
 
     @classmethod
     def _decode(cls, data: Union[str, bytes], loader: str = Defaults.yaml_loader, *args, **kwargs) -> Union[Dict[Any, Any], List[str]]: 
@@ -44,7 +44,7 @@ class Yaml(SerializerCls):
     async def _async_encode(cls, obj: Dict[Any, Any], dumper: str = Defaults.yaml_dumper, *args, default: Dict[Any, Any] = None, **kwargs) -> str:
         _dumper = yaml.Dumper
         if dumper == 'safe': _dumper = yaml.SafeDumper
-        return yaml.dump(obj, Dumper=_dumper *args, **kwargs)
+        return yaml.dump(obj, Dumper=_dumper, *args, **kwargs)
     
     @classmethod
     async def _async_decode(cls, data: Union[str, bytes], loader: str = Defaults.yaml_loader, *args, **kwargs) -> Union[Dict[Any, Any], List[str]]:
