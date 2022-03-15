@@ -16,8 +16,10 @@ try:
     import trio
     _async_backend = 'trio'
 
-except ImportError:
-    _async_backend = 'asyncio'
+except: _async_backend = 'asyncio'
+
+#except ImportError:
+#    _async_backend = 'asyncio'
 
 """
 Some Base Variables that don't rely on other 

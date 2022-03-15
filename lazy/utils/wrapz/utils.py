@@ -23,8 +23,8 @@ try:
     import trio
     _async_backend = 'trio'
 
-except ImportError:
-    _async_backend = 'asyncio'
+#except ImportError:
+except: _async_backend = 'asyncio'
 
 from .loops import *
 

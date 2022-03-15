@@ -19,7 +19,7 @@ from . import cmd # depends on types, serialize, io
 
 ## Bring submodules up
 
-from .types import classproperty
+from .types.prop import classproperty
 from .libz import Lib
 from .serialize import Serialize
 from .utils.helpers import get_logger, get_cls_logger
