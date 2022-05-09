@@ -58,6 +58,7 @@ def require_redis():
     #if RedisClient is not None: return
 
 
+# RedisBackend is a class that contains all the configuration for the Redis backend
 class RedisBackend(RedisConfigz):
     cachedir: str = None
     sentinel: bool = False
@@ -72,6 +73,9 @@ class RedisBackend(RedisConfigz):
         env_prefix = "REDIS_"
 
     def wait_for_redis_started(self):
+        """
+        Wait for the Redis server to start
+        """
         r = RedisClient(host=self.host, port=self.port, db=self.database, password=self.password, socket_timeout = 5.0, socket_connect_timeout = 5.0, socket_keepalive = False)
         attempts, success = 0, False
         while attempts < self.startup_attempts:

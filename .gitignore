@@ -18,3 +18,5 @@ __pycache__*
 **.ipynb**
 **__lazycls**
 **/authz
+mkdocs.yml
+*_docs*

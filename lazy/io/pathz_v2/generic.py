@@ -71,14 +71,19 @@ _PREFIXES_TO_CLS: Dict[str, PathzLike] = {
 
 
 def as_path(path: PathLike) -> PathzLike:
-    """Create a generic `pathlib.Path`-like abstraction.
+    """
+    Given a path-like object, return a path-like object
+    
+    Create a generic `pathlib.Path`-like abstraction.
     Depending on the input (e.g. `gs://`, `github://`, `ResourcePath`,...), the
     system (Windows, Linux,...), the function will create the right pathlib-like
     abstraction.
+
     Args:
-        path: Pathlike object.
+      path (PathLike): Pathlike object.
+    
     Returns:
-        path: The `pathlib.Path`-like abstraction.
+      A pathlib-like abstraction.
     """
     if isinstance(path, str):
         uri_splits = path.split('://', maxsplit=1)
@@ -103,6 +108,15 @@ def get_cwd():
 
 
 def resolve_relative(filepath: PathLike) -> str:
+    """
+    If the filepath is a relative path, convert it to an absolute path
+    
+    Args:
+      filepath (PathLike): The path to the file you want to resolve.
+    
+    Returns:
+      A string.
+    """
     if not isinstance(filepath, str): filepath = filepath.as_posix()
     if '://' in filepath: return filepath
     if filepath.startswith('~'): filepath = filepath.replace('~', get_userhome(), 1)

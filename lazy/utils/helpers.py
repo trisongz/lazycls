@@ -1,8 +1,10 @@
 import time
+import inspect
 
 from logz import get_logger, get_cls_logger
 from lazy.static.timez import TimeValues
 from lazy.models import BaseCls
+
 
 class TimeResult(BaseCls):
     secs: float = 0.0
@@ -55,3 +57,15 @@ def timer(start: float = None, as_string: bool = False, short: bool = False, as_
     if not as_string: return stop
     return to_time_string(stop, short=short, as_obj = as_obj)
 
+
+def is_coro_func(obj, func_name: str = None):
+    """
+    This is probably in the library elsewhere but returns bool
+    based on if the function is a coro
+    """
+    if inspect.iscoroutinefunction(obj): return True
+    if inspect.isawaitable(obj): return True
+    if func_name and hasattr(obj, func_name) and inspect.iscoroutinefunction(getattr(obj, func_name)):
+        return True
+    if hasattr(obj, '__call__') and inspect.iscoroutinefunction(obj.__call__): return True
+    return False
