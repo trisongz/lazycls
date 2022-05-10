@@ -266,7 +266,11 @@ class PathzCFSPath(Path, PathzCFSPurePath):
     def is_cloud(self) -> bool:
         if not self._prefix: return False
         return bool(self._prefix in self.parts[0] or self._prefix in self.parts[1])
-    
+
+    @property
+    def is_pathz(self) -> bool:
+        return True
+
     @property
     def exists_(self) -> bool:
         return self.exists()
@@ -536,6 +540,22 @@ class PathzCFSPath(Path, PathzCFSPurePath):
             if not parents or self.parent == self: raise
             await self.parent.async_mkdir(parents=True, exist_ok=True)
             await self.async_mkdir(parents=False, exist_ok=exist_ok)
+
+        except OSError:
+            # Cannot rely on checking for EEXIST, since the operating system
+            # could give priority to other errors like EACCES or EROFS
+            if not exist_ok or not await self.async_is_dir(): raise
+    
+    async def async_makedirs(self, parents: bool = True, exist_ok: bool = True):
+        """
+        Create a new directory at this given path.
+        """
+        try: await self._accessor.async_makedirs(self._cloudpath, exist_ok = exist_ok)
+
+        except FileNotFoundError:
+            if not parents or self.parent == self: raise
+            await self.parent.async_makedirs(exist_ok=True)
+            await self.async_makedirs(exist_ok=exist_ok)
 
         except OSError:
             # Cannot rely on checking for EEXIST, since the operating system

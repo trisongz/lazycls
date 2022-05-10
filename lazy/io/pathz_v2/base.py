@@ -284,6 +284,9 @@ class PathzPath(Path, PathzPurePath):
     def is_cloud(self) -> bool:
         return False
     
+    @property
+    def is_pathz(self) -> bool:
+        return True
 
     @property
     def exists_(self) -> bool:
