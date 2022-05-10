@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 if sys.version_info.major != 3:
     raise RuntimeError("This package requires Python 3+")
 
-version = '0.1.14'
+version = '0.1.15'
 pkg_name = 'lazycls'
 gitrepo = 'trisongz/lazycls'
 root = Path(__file__).parent
@@ -45,6 +45,8 @@ args = {
         ]
     }
 }
+
+if extras: args['extras_require'] = extras
 
 setup(
     name=pkg_name,
